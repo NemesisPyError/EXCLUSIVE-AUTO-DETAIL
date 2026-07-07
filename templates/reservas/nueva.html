@@ -387,6 +387,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
     var selectedDetalladoSlug = null;
     var pricingResult = null;
 
+    // Cache, debounce y control de concurrencia para consultas de precio
+    var precioCache = {};
+    var precioAbortController = null;
+    var precioDebounceTimer = null;
+    var precioLoading = false;
+    var lastPrecioResult = null;
+
     var hoy = new Date().toISOString().split('T')[0];
 
     function escapeHtml(str) {
@@ -564,6 +571,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
         grid.querySelectorAll('.option-card').forEach(function(card) {
             card.addEventListener('click', function() {
+                // Si ya esta seleccionado, no hacer nada
+                if (this.classList.contains('selected')) return;
+
                 grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
                 this.classList.add('selected');
 
@@ -575,6 +585,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
                 selectedSubtipoSlug = null;
                 document.getElementById('subtipo_slug').value = '';
                 pricingResult = null;
+
+                // Cancelar cualquier consulta de precio en curso
+                if (precioAbortController) { precioAbortController.abort(); precioAbortController = null; }
+                if (precioDebounceTimer) { clearTimeout(precioDebounceTimer); precioDebounceTimer = null; }
+                setPrecioLoading(false);
 
                 if (this.dataset.slug === 'normal') {
                     loadSubtipos('normal');
@@ -606,6 +621,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
                     grid.querySelectorAll('.option-card').forEach(function(card) {
                         card.addEventListener('click', function() {
+                            if (this.classList.contains('selected')) return;
+
                             grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
                             this.classList.add('selected');
                             selectedSubtipoSlug = this.dataset.slug;
@@ -645,11 +662,18 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
         grid.querySelectorAll('.option-card').forEach(function(card) {
             card.addEventListener('click', function() {
+                if (this.classList.contains('selected')) return;
+
                 grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
                 this.classList.add('selected');
                 selectedDetalladoSlug = this.dataset.slug;
                 document.getElementById('tipo_detallado_slug').value = this.dataset.slug;
                 pricingResult = null;
+
+                if (precioAbortController) { precioAbortController.abort(); precioAbortController = null; }
+                if (precioDebounceTimer) { clearTimeout(precioDebounceTimer); precioDebounceTimer = null; }
+                setPrecioLoading(false);
+
                 loadPrecioInfoDetallado(this.dataset.slug);
             });
         });
@@ -701,81 +725,144 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
             });
     }
 
+    // ==================== PRICING LOOKUP (con cache, debounce, 429) ====================
+    function fetchPrecioConCache(url, cacheKey, container, lavadoSlug) {
+        // 1. Cache hit: usar valor almacenado sin llamar a la API
+        if (precioCache[cacheKey] !== undefined) {
+            pricingResult = precioCache[cacheKey];
+            renderPrecioCard(container, lavadoSlug, pricingResult);
+            return;
+        }
+
+        // 2. Abortar consulta previa en vuelo
+        if (precioAbortController) {
+            precioAbortController.abort();
+        }
+
+        // 3. Cancelar debounce pendiente
+        if (precioDebounceTimer) {
+            clearTimeout(precioDebounceTimer);
+        }
+
+        // 4. Deshabilitar botones de seleccion durante la carga
+        setPrecioLoading(true);
+
+        // 5. Debounce 250ms
+        precioDebounceTimer = setTimeout(function () {
+            precioDebounceTimer = null;
+            precioAbortController = new AbortController();
+
+            fetch(url, { signal: precioAbortController.signal })
+                .then(function (r) {
+                    if (r.status === 429) {
+                        // 429 Too Many Requests: conservar ultimo precio valido
+                        var msg = 'Demasiadas consultas. Intente nuevamente en unos segundos.';
+                        if (lastPrecioResult) {
+                            pricingResult = lastPrecioResult;
+                            renderPrecioCard(container, lavadoSlug, lastPrecioResult);
+                            msg += ' (mostrando ultimo precio valido)';
+                        }
+                        container.querySelector('.horario-loading') &&
+                            (container.innerHTML = '<p style="color:var(--warning);font-size:0.85rem;">' + msg + '</p>');
+                        return null;
+                    }
+                    return r.json();
+                })
+                .then(function (d) {
+                    if (!d) return; // fue 429
+                    if (d.success && d.precio) {
+                        pricingResult = d.precio;
+                        lastPrecioResult = d.precio;
+                        precioCache[cacheKey] = d.precio;
+                        renderPrecioCard(container, lavadoSlug, d.precio);
+                    } else {
+                        container.innerHTML = '<p style="color:var(--text-muted);">' + escapeHtml(d.error || 'No se encontro precio para esta combinacion.') + '</p>';
+                        pricingResult = null;
+                    }
+                })
+                .catch(function (err) {
+                    if (err && err.name === 'AbortError') return; // ignorar abortos
+                    if (lastPrecioResult) {
+                        pricingResult = lastPrecioResult;
+                    }
+                    container.innerHTML = '<p style="color:var(--danger);">Error al consultar precio.</p>';
+                })
+                .finally(function () {
+                    setPrecioLoading(false);
+                    precioAbortController = null;
+                });
+        }, 250);
+    }
+
+    function setPrecioLoading(loading) {
+        precioLoading = loading;
+        var grids = ['#tipoLavadoGrid', '#subTipoGrid', '#tipoDetalladoGrid'];
+        grids.forEach(function (sel) {
+            var grid = document.querySelector(sel);
+            if (!grid) return;
+            grid.querySelectorAll('.option-card').forEach(function (card) {
+                if (loading) {
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                } else {
+                    card.style.opacity = '';
+                    card.style.pointerEvents = '';
+                }
+            });
+        });
+    }
+
+    function buildPrecioCacheKey(lavadoSlug, subtipoSlug, detalladoSlug) {
+        var veh = selectedVehiculo ? selectedVehiculo.slug : '';
+        var cat = selectedCategoria ? selectedCategoria.slug : '';
+        if (detalladoSlug) {
+            return veh + ':' + cat + ':detallado:' + detalladoSlug;
+        }
+        return veh + ':' + cat + ':' + (lavadoSlug || '') + ':' + (subtipoSlug || '');
+    }
+
     // ==================== PRICING LOOKUP ====================
     function loadPrecioInfo(lavadoSlug, subtipoSlug) {
         var cat = document.getElementById('detalleCerrado');
         if (!lavadoSlug) { cat.style.display = 'none'; return; }
+
+        var cacheKey = buildPrecioCacheKey(lavadoSlug, subtipoSlug);
+
+        cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando precio...</div>';
+        cat.style.display = '';
 
         var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
                   '&categoria_slug=' + encodeURIComponent(selectedCategoria.slug) +
                   '&tipo_lavado_slug=' + encodeURIComponent(lavadoSlug);
         if (subtipoSlug) url += '&subtipo_slug=' + encodeURIComponent(subtipoSlug);
 
-        cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando precio...</div>';
-        cat.style.display = '';
-
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d.success && d.precio) {
-                    pricingResult = d.precio;
-                    renderPrecioCard(cat, lavadoSlug, d.precio);
-                } else {
-                    cat.innerHTML = '<p style="color:var(--text-muted);">' + escapeHtml(d.error || 'No se encontro precio para esta combinacion.') + '</p>';
-                    pricingResult = null;
-                }
-            })
-            .catch(function() {
-                cat.innerHTML = '<p style="color:var(--danger);">Error al consultar precio.</p>';
-                pricingResult = null;
-            });
+        fetchPrecioConCache(url, cacheKey, cat, lavadoSlug);
     }
 
     function loadPrecioInfoDetallado(detalladoSlug) {
         var cat = document.getElementById('detalleDetalladoInfo');
-        var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
-                  '&categoria_slug=detallado&tipo_detallado_slug=' + encodeURIComponent(detalladoSlug);
+        var cacheKey = buildPrecioCacheKey(null, null, detalladoSlug);
 
         cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando precio...</div>';
         cat.style.display = '';
 
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d.success && d.precio) {
-                    pricingResult = d.precio;
-                    renderPrecioCard(cat, 'detallado', d.precio);
-                } else {
-                    cat.innerHTML = '<p style="color:var(--text-muted);">' + escapeHtml(d.error || 'Sin informacion.') + '</p>';
-                    pricingResult = null;
-                }
-            })
-            .catch(function() {
-                cat.innerHTML = '<p style="color:var(--danger);">Error.</p>';
-                pricingResult = null;
-            });
+        var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
+                  '&categoria_slug=detallado&tipo_detallado_slug=' + encodeURIComponent(detalladoSlug);
+
+        fetchPrecioConCache(url, cacheKey, cat, 'detallado');
     }
 
     function loadPrecioInfoIntegral() {
         var cat = document.getElementById('detalleIntegral');
+        var cacheKey = buildPrecioCacheKey('integral', null, null);
+
+        cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando...</div>';
+        cat.style.display = '';
+
         var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
                   '&categoria_slug=integral';
 
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d.success && d.precio) {
-                    pricingResult = d.precio;
-                    renderPrecioCard(cat, 'integral', d.precio);
-                } else {
-                    cat.innerHTML = '<div class="info-card"><p style="color:var(--text-muted);text-align:center;">' + escapeHtml(d.error || 'No disponible.') + '</p></div>';
-                    pricingResult = null;
-                }
-            })
-            .catch(function() {
-                cat.innerHTML = '<div class="info-card"><p style="color:var(--danger);text-align:center;">Error.</p></div>';
-                pricingResult = null;
-            });
+        fetchPrecioConCache(url, cacheKey, cat, 'integral');
     }
 
     function renderPrecioCard(container, tipo, precio) {
