@@ -1,0 +1,274 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Reservas — Admin{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.25rem;">
+    <h4 style="font-weight:700;margin:0;">Reservas</h4>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+        <button type="button" class="btn-sm-custom {% if request.args.get('vista') != 'agenda' %}success{% endif %}" onclick="cambiarVista('tabla')" id="btnTabla">
+            <i class="fa-solid fa-table-list me-1"></i> Lista
+        </button>
+        <button type="button" class="btn-sm-custom {% if request.args.get('vista') == 'agenda' %}success{% endif %}" onclick="cambiarVista('agenda')" id="btnAgenda">
+            <i class="fa-solid fa-timeline me-1"></i> Agenda
+        </button>
+        <button type="button" class="btn-sm-custom danger" id="btnEliminarMasivo" style="display:none;" onclick="abrirModalMasivo()">
+            <i class="fa-regular fa-trash-can me-1"></i> Eliminar seleccionados (<span id="countSeleccionados">0</span>)
+        </button>
+    </div>
+</div>
+
+<form method="GET" class="filtros-admin">
+    <input type="hidden" name="vista" value="{{ request.args.get('vista', 'tabla') }}">
+    <select name="estado">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}
+        <option value="{{ e.id }}" {% if filtro_estado == e.id|string %}selected{% endif %}>{{ e.nombre }}</option>
+        {% endfor %}
+    </select>
+    <input type="date" name="fecha" value="{{ filtro_fecha }}" style="color-scheme:dark;">
+    <input type="text" name="buscar" placeholder="Buscar cliente..." value="{{ filtro_buscar }}">
+    <button type="submit"><i class="fa-solid fa-search me-1"></i> Filtrar</button>
+    <a href="{{ url_for('admin.listar_reservas') }}" class="btn-link-custom">Limpiar</a>
+</form>
+
+<!-- VISTA TABLA -->
+<div id="vistaTabla" class="admin-card" {% if request.args.get('vista') == 'agenda' %}style="display:none;"{% endif %}>
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th style="width:36px;"><input type="checkbox" id="selectAll" style="accent-color:var(--accent);cursor:pointer;" title="Seleccionar todos"></th>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Telefono</th>
+                    <th>Vehiculo</th>
+                    <th>Servicio</th>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Dur.</th>
+                    <th>Asignado</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reservas %}
+                <tr>
+                    <td><input type="checkbox" class="chk-reserva" value="{{ r.id }}" style="accent-color:var(--accent);cursor:pointer;"></td>
+                    <td><a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" style="color:var(--accent);font-weight:700;text-decoration:none;">{{ r.id }}</a></td>
+                    <td>{{ r.cliente.nombre }} {{ r.cliente.apellido }}</td>
+                    <td style="font-size:0.8rem;color:var(--text-muted);">{{ r.cliente.telefono }}</td>
+                    <td style="font-size:0.8rem;">
+                        {% set v = r.vehiculos.first() %}
+                        {% if v %}{{ v.marca }} {{ v.modelo }}{% else %}--{% endif %}
+                    </td>
+                    <td style="font-size:0.8rem;color:var(--text-muted);">
+                        {% if r.categoria_servicio %}{{ r.categoria_servicio.nombre }}{% else %}--{% endif %}
+                    </td>
+                    <td>{{ r.fecha.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ r.hora_inicio.strftime('%H:%M') }}</td>
+                    <td style="font-size:0.78rem;color:var(--text-muted);">{{ (r.duracion_total_min|string + ' min') if r.duracion_total_min else '--' }}</td>
+                    <td style="font-size:0.78rem;">{{ r.asignado_a.nombre if r.asignado_a else '--' }}</td>
+                    <td>
+                        <span class="badge-estado" style="background:{{ r.estado.color_badge }}22;color:{{ r.estado.color_badge }};border:1px solid {{ r.estado.color_badge }}44;">
+                            {{ r.estado.nombre }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                            <a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" class="btn-sm-custom" title="Ver"><i class="fa-regular fa-eye"></i></a>
+                            <a href="{{ url_for('admin.editar_reserva', reserva_id=r.id) }}" class="btn-sm-custom" title="Editar"><i class="fa-regular fa-pen-to-square"></i></a>
+                            {% set cliente_nombre = r.cliente.nombre %}
+                            {% set v = r.vehiculos.first() %}
+                            {% set msg_vehiculo = (v.marca ~ ' ' ~ v.modelo) if v else 'N/E' %}
+                            {% set msg_wa = 'Hola *' ~ cliente_nombre ~ '*, desde *Exclusive Auto Detail* te confirmamos tu reserva #' ~ r.id|string ~ ' del *' ~ r.fecha.strftime('%d/%m/%Y') ~ '* a las *' ~ r.hora_inicio.strftime('%H:%M') ~ '* hs. Vehiculo: *' ~ msg_vehiculo ~ '*. Escribinos para cualquier consulta.' %}
+                            <a href="https://wa.me/{{ r.cliente.telefono | whatsapp_number }}?text={{ msg_wa | urlencode }}" target="_blank" rel="noopener" class="btn-sm-custom" title="Enviar WhatsApp" style="color:#25d366;border-color:#25d366;" onclick="return confirm('Abrir WhatsApp para confirmar la reserva #{{ r.id }}?')"><i class="fa-brands fa-whatsapp"></i></a>
+                            <button type="button" class="btn-sm-custom danger" title="Eliminar" onclick="confirmarEliminar({{ r.id }})"><i class="fa-regular fa-trash-can"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--text-muted);">No se encontraron reservas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if paginacion.pages > 1 %}
+    <div class="pagination-admin">
+        {% if paginacion.has_prev %}
+        <a href="{{ url_for('admin.listar_reservas', page=paginacion.prev_num, estado=filtro_estado, fecha=filtro_fecha, buscar=filtro_buscar, vista=request.args.get('vista','tabla')) }}"><i class="fa-solid fa-chevron-left"></i></a>
+        {% endif %}
+        {% for p in range(1, paginacion.pages + 1) %}
+            {% if p == paginacion.page %}
+            <span class="active-page">{{ p }}</span>
+            {% elif p <= 3 or p > paginacion.pages - 3 or (p >= paginacion.page - 1 and p <= paginacion.page + 1) %}
+            <a href="{{ url_for('admin.listar_reservas', page=p, estado=filtro_estado, fecha=filtro_fecha, buscar=filtro_buscar, vista=request.args.get('vista','tabla')) }}">{{ p }}</a>
+            {% elif p == 4 or p == paginacion.pages - 3 %}
+            <span style="border:none;">...</span>
+            {% endif %}
+        {% endfor %}
+        {% if paginacion.has_next %}
+        <a href="{{ url_for('admin.listar_reservas', page=paginacion.next_num, estado=filtro_estado, fecha=filtro_fecha, buscar=filtro_buscar, vista=request.args.get('vista','tabla')) }}"><i class="fa-solid fa-chevron-right"></i></a>
+        {% endif %}
+        <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem;">{{ paginacion.total }} reservas</span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- VISTA AGENDA (timeline visual) -->
+<div id="vistaAgenda" class="admin-card" {% if request.args.get('vista') != 'agenda' %}style="display:none;"{% endif %}>
+    <h6 style="font-weight:700;font-size:0.9rem;margin-bottom:1rem;">Agenda Visual</h6>
+    {% if reservas %}
+    <div style="position:relative;min-height:200px;">
+        {% set hora_min = 7 %}
+        {% set hora_max = 17 %}
+        {% set total_slots = (hora_max - hora_min) * 2 %}
+        {% set base_pct = (100 / total_slots) | round(2) %}
+
+        <div style="display:flex;margin-bottom:0.5rem;padding-left:120px;">
+            {% for h in range(hora_min, hora_max + 1) %}
+            <div style="flex:1;text-align:center;font-size:0.65rem;color:var(--text-muted);">{{ '%02d' % h }}:00</div>
+            {% endfor %}
+        </div>
+
+        <div style="position:relative;border-top:1px solid var(--border-subtle);min-height:300px;padding-top:0.5rem;">
+            {% for r in reservas %}
+            {% set hora_inicio_min = r.hora_inicio.hour * 60 + r.hora_inicio.minute %}
+            {% set hora_fin_min = (r.hora_fin.hour * 60 + r.hora_fin.minute) if r.hora_fin else (hora_inicio_min + (r.duracion_total_min or 60)) %}
+            {% set dia_min = hora_min * 60 %}
+            {% set dia_max = hora_max * 60 %}
+            {% set dia_span = dia_max - dia_min %}
+            {% if dia_span > 0 %}
+            {% set left_pct = (((hora_inicio_min - dia_min) / dia_span) * 100) | round(1) %}
+            {% set width_pct = (((hora_fin_min - hora_inicio_min) / dia_span) * 100) | round(1) %}
+            {% if width_pct < 2 %}{% set width_pct = 2 %}{% endif %}
+            <div style="position:relative;height:38px;margin-bottom:4px;">
+                <a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" style="position:absolute;left:calc({{ left_pct }}% + 120px);width:{{ width_pct }}%;height:100%;
+                    background:{{ r.estado.color_badge }}18;border:1px solid {{ r.estado.color_badge }}33;border-radius:6px;
+                    display:flex;align-items:center;padding:0 0.5rem;color:var(--white);text-decoration:none;font-size:0.72rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:0.2s;">
+                    <span style="font-weight:700;">#{{ r.id }}</span>
+                    <span style="margin-left:0.5rem;opacity:0.8;">{{ r.cliente.nombre }}</span>
+                    <span style="margin-left:0.5rem;font-weight:600;color:{{ r.estado.color_badge }};">{{ r.hora_inicio.strftime('%H:%M') }}</span>
+                </a>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            {% if not reservas %}
+            <p class="text-muted-custom" style="text-align:center;padding:2rem;">Sin reservas para mostrar.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted-custom" style="text-align:center;padding:2rem;">No se encontraron reservas.</p>
+    {% endif %}
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion</h6></div>
+            <div class="modal-body" style="font-size:0.85rem;color:var(--text-muted);">
+                Estas seguro de eliminar la reserva <strong id="eliminarNumero" style="color:var(--white);"></strong>? Esta accion no se puede deshacer.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="formEliminar" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-sm-custom" style="border-color:var(--danger);color:var(--danger);">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Eliminar Masivo -->
+<div class="modal fade" id="modalEliminarMasivo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion masiva</h6></div>
+            <div class="modal-body" style="font-size:0.85rem;color:var(--text-muted);">
+                Estas seguro de eliminar <strong id="cantidadEliminarMasivo" style="color:var(--danger);"></strong> reservas? Esta accion no se puede deshacer.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-sm-custom" style="border-color:var(--danger);color:var(--danger);" id="btnConfirmarMasivo" onclick="ejecutarEliminarMasivo()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function cambiarVista(vista) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('vista', vista);
+    window.location.href = url.toString();
+}
+
+function confirmarEliminar(reservaId) {
+    document.getElementById('eliminarNumero').textContent = '#' + reservaId;
+    document.getElementById('formEliminar').action = '/admin/reservas/' + reservaId + '/eliminar';
+    var modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+    modal.show();
+}
+
+(function () {
+    var selectAll = document.getElementById('selectAll');
+    var chks = document.querySelectorAll('.chk-reserva');
+    var btnMasivo = document.getElementById('btnEliminarMasivo');
+    var countEl = document.getElementById('countSeleccionados');
+
+    function actualizarBoton() {
+        var sel = document.querySelectorAll('.chk-reserva:checked');
+        var n = sel.length;
+        if (n > 0) { btnMasivo.style.display = ''; countEl.textContent = n; }
+        else { btnMasivo.style.display = 'none'; }
+        selectAll.indeterminate = n > 0 && n < chks.length;
+        selectAll.checked = n === chks.length && n > 0;
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            chks.forEach(function (cb) { cb.checked = selectAll.checked; });
+            actualizarBoton();
+        });
+    }
+
+    chks.forEach(function (cb) { cb.addEventListener('change', actualizarBoton); });
+})();
+
+function abrirModalMasivo() {
+    var sel = document.querySelectorAll('.chk-reserva:checked');
+    document.getElementById('cantidadEliminarMasivo').textContent = sel.length;
+    var modal = new bootstrap.Modal(document.getElementById('modalEliminarMasivo'));
+    modal.show();
+}
+
+function ejecutarEliminarMasivo() {
+    var sel = document.querySelectorAll('.chk-reserva:checked');
+    var ids = Array.from(sel).map(function (cb) { return parseInt(cb.value); });
+    var btn = document.getElementById('btnConfirmarMasivo');
+    btn.disabled = true; btn.textContent = 'Eliminando...';
+
+    fetch('/admin/reservas/eliminar-masivo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+        },
+        body: JSON.stringify({ ids: ids })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.success) { location.reload(); }
+        else { alert('Error: ' + (data.error || 'Error desconocido')); btn.disabled = false; btn.textContent = 'Eliminar'; }
+    })
+    .catch(function () { alert('Error de conexion.'); btn.disabled = false; btn.textContent = 'Eliminar'; });
+}
+</script>
+{% endblock %}

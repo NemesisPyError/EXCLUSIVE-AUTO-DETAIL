@@ -1,0 +1,166 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Factores de Tiempo — Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-3">
+    <h2 style="font-weight:700;font-size:1.3rem;margin:0;">Factores de Tiempo</h2>
+    <button class="btn-sm-custom success" data-bs-toggle="modal" data-bs-target="#modalFactor" onclick="nuevoFactor()">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo Factor
+    </button>
+</div>
+
+<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">
+    Configurá los tiempos adicionales por nivel de suciedad, condiciones del vehículo y otros factores. Estos minutos se suman a la duración base de los servicios contratados.
+</p>
+
+{% for tipo, items in agrupados.items() %}
+<div class="admin-card mb-3">
+    <div class="d-flex align-center justify-content-between mb-2">
+        <h3 class="card-title" style="margin-bottom:0;font-size:0.8rem;">
+            <i class="fa-solid {% if tipo == 'suciedad' %}fa-droplet{% elif tipo == 'condicion' %}fa-triangle-exclamation{% else %}fa-gear{% endif %} me-2"></i>
+            {{ tipos_labels.get(tipo, tipo|capitalize) }}
+        </h3>
+        <span style="font-size:0.75rem;color:var(--text-muted);">{{ items|length }} factor(es)</span>
+    </div>
+    <table class="table-admin" style="margin-bottom:0;">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Minutos adicionales</th>
+                <th>Estado</th>
+                <th style="width:120px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in items %}
+            <tr>
+                <td style="font-weight:600;">{{ f.nombre }}</td>
+                <td><span style="background:rgba(26,107,255,0.12);color:var(--accent);padding:0.2rem 0.6rem;border-radius:4px;font-weight:700;">+{{ f.minutos_adicionales }} min</span></td>
+                <td>
+                    <button class="badge-estado {% if f.activo %}color-confirmada{% else %}color-cancelada{% endif %}"
+                            style="border:none;cursor:pointer;"
+                            onclick="toggleFactor({{ f.id }})">
+                        {{ 'Activo' if f.activo else 'Inactivo' }}
+                    </button>
+                </td>
+                <td>
+                    <button class="btn-sm-custom me-1" onclick="editarFactor({{ f.id }}, '{{ f.tipo }}', '{{ f.nombre|e }}', {{ f.minutos_adicionales }}, {{ 'true' if f.activo else 'false' }})"
+                            style="padding:0.3rem 0.6rem;font-size:0.75rem;">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn-sm-custom danger" onclick="eliminarFactor({{ f.id }}, '{{ f.nombre|e }}')"
+                            style="padding:0.3rem 0.6rem;font-size:0.75rem;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not items %}
+            <tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:1.5rem;">Sin factores configurados para este tipo.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+{% if not agrupados %}
+<div class="admin-card" style="text-align:center;padding:3rem;">
+    <i class="fa-solid fa-clock" style="font-size:2.5rem;color:var(--text-muted);display:block;margin-bottom:1rem;"></i>
+    <p style="color:var(--text-muted);font-size:0.9rem;">No hay factores de tiempo configurados.</p>
+    <button class="btn-sm-custom success mt-2" data-bs-toggle="modal" data-bs-target="#modalFactor" onclick="nuevoFactor()">
+        Crear primer factor
+    </button>
+</div>
+{% endif %}
+
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modalFactor" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="formFactor" method="POST" action="{{ url_for('admin.crear_factor_tiempo') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="font-weight:700;" id="modalFactorTitle">Nuevo Factor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-light);">Tipo *</label>
+                        <select class="form-select" name="tipo" id="factorTipo" required>
+                            {% for t in tipos %}
+                            <option value="{{ t }}">{{ tipos_labels.get(t, t|capitalize) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-light);">Nombre *</label>
+                        <input type="text" class="form-control" name="nombre" id="factorNombre" required placeholder="Ej: Leve, Mucho barro, Lavado de motor...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--text-light);">Minutos adicionales</label>
+                        <input type="number" class="form-control" name="minutos_adicionales" id="factorMinutos" value="0" min="0">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="activo" id="factorActivo" value="1" checked>
+                        <label class="form-check-label" style="color:var(--text-light);" for="factorActivo">Activo</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Form oculto para eliminar -->
+<form id="formEliminar" method="POST" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<script>
+const tiposLabels = {{ tipos_labels|tojson|safe }};
+
+function nuevoFactor() {
+    document.getElementById('modalFactorTitle').textContent = 'Nuevo Factor';
+    document.getElementById('formFactor').action = '{{ url_for("admin.crear_factor_tiempo") }}';
+    document.getElementById('factorTipo').value = 'suciedad';
+    document.getElementById('factorNombre').value = '';
+    document.getElementById('factorMinutos').value = '0';
+    document.getElementById('factorActivo').checked = true;
+}
+
+function editarFactor(id, tipo, nombre, minutos, activo) {
+    document.getElementById('modalFactorTitle').textContent = 'Editar Factor';
+    document.getElementById('formFactor').action = '{{ url_for("admin.editar_factor_tiempo", factor_id=0) }}'.replace('0', id);
+    document.getElementById('factorTipo').value = tipo;
+    document.getElementById('factorNombre').value = nombre;
+    document.getElementById('factorMinutos').value = minutos;
+    document.getElementById('factorActivo').checked = activo;
+    new bootstrap.Modal(document.getElementById('modalFactor')).show();
+}
+
+function toggleFactor(id) {
+    fetch('{{ url_for("admin.toggle_factor_tiempo", factor_id=0) }}'.replace('0', id), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) location.reload();
+    });
+}
+
+function eliminarFactor(id, nombre) {
+    if (!confirm('¿Eliminar el factor "' + nombre + '"?\nEsta acción no se puede deshacer.')) return;
+    const form = document.getElementById('formEliminar');
+    form.action = '{{ url_for("admin.eliminar_factor_tiempo", factor_id=0) }}'.replace('0', id);
+    form.submit();
+}
+</script>
+{% endblock %}

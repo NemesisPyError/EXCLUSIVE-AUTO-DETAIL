@@ -1,0 +1,1116 @@
+{% extends "base.html" %}
+
+{% block title %}Reservar Turno — Exclusive Auto Detail{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #111;
+    --bg-card: #1a1a1a;
+    --accent: #1a6bff;
+    --accent-hover: #1557d9;
+    --white: #fff;
+    --text-muted: #a0a0a0;
+    --text-light: #ccc;
+    --border-subtle: #2a2a2a;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
+}
+body { background: var(--bg-primary); color: var(--white); font-family: 'Montserrat', sans-serif; padding-top: 80px; }
+.wizard-container { max-width: 860px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+.progress-steps { display: flex; justify-content: space-between; margin-bottom: 2.5rem; position: relative; }
+.progress-steps::before { content: ''; position: absolute; top: 16px; left: 0; right: 0; height: 3px; background: var(--border-subtle); z-index: 0; }
+.progress-steps .step { position: relative; z-index: 1; text-align: center; flex: 1; }
+.progress-steps .step .circle { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); transition: 0.3s; }
+.progress-steps .step.active .circle { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.progress-steps .step.done .circle { background: var(--success); border-color: var(--success); color: var(--white); }
+.progress-steps .step .label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.progress-steps .step.active .label { color: var(--accent); }
+.step-content { display: none; }
+.step-content.active { display: block; animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-light); margin-bottom: 0.35rem; }
+.form-control, .form-select { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--white); border-radius: 8px; padding: 0.65rem 1rem; font-size: 0.9rem; }
+.form-control:focus, .form-select:focus { background: var(--bg-card); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,107,255,0.15); color: var(--white); }
+.form-control::placeholder { color: #555; }
+.form-control.is-invalid, .form-select.is-invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,53,69,0.15); }
+.invalid-feedback { display: none; font-size: 0.78rem; color: #f5a3a3; margin-top: 0.25rem; }
+.form-control.is-invalid ~ .invalid-feedback, .form-select.is-invalid ~ .invalid-feedback { display: block; }
+.wizard-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
+
+/* Step 2: Vehicle grid */
+.option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; }
+.option-card { cursor: pointer; padding: 1.25rem 0.75rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 10px; transition: 0.25s; }
+.option-card i { font-size: 1.6rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block; }
+.option-card span { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.option-card small { font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 0.15rem; }
+.option-card:hover { border-color: var(--accent); }
+.option-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); }
+.option-card.selected i, .option-card.selected span { color: var(--accent); }
+
+/* Step 3: Category grid */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+.cat-card { cursor: pointer; padding: 1.5rem 1rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 12px; transition: 0.25s; }
+.cat-card i { font-size: 1.8rem; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
+.cat-card h6 { font-size: 0.85rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.25rem; }
+.cat-card small { font-size: 0.68rem; color: var(--text-muted); display: block; }
+.cat-card:hover { border-color: var(--accent); }
+.cat-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); }
+.cat-card.selected i, .cat-card.selected h6 { color: var(--accent); }
+
+/* Step 4 sub-options */
+.step-indicator { text-align: center; margin-bottom: 0.5rem; }
+.step-indicator span { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+
+/* Card for Alta/Extrema (closed service) */
+.info-card { background: var(--bg-card); border: 1px solid rgba(26,107,255,0.3); border-radius: 12px; padding: 1.5rem; }
+.info-card .info-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.info-card .info-header i { font-size: 2rem; color: var(--warning); }
+.info-card .info-meta { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
+.info-card .info-meta-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-light); }
+.info-card .info-meta-item i { color: var(--accent); }
+.info-card .info-precio { font-size: 1.4rem; font-weight: 900; color: var(--accent); }
+.info-card .info-nota { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1rem; padding: 0.75rem; background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.2); border-radius: 8px; font-size: 0.78rem; color: #f0c040; }
+.info-card .info-nota i { margin-top: 2px; flex-shrink: 0; }
+
+/* Date & Time */
+.horario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.6rem; margin-top: 1rem; }
+.horario-btn { padding: 0.75rem 0.5rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); cursor: pointer; transition: 0.25s; }
+.horario-btn:hover:not(.disabled) { border-color: var(--accent); }
+.horario-btn.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); color: var(--accent); }
+.horario-btn.disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--border-subtle); }
+.horario-btn .lugares { font-size: 0.65rem; font-weight: 400; color: var(--text-muted); display: block; }
+
+.horario-loading { text-align: center; padding: 2rem; color: var(--text-muted); }
+.horario-loading i { font-size: 1.5rem; margin-bottom: 0.5rem; display: block; }
+
+.spinner-overlay { display: none; position: fixed; inset: 0; background: rgba(13,13,13,0.7); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; }
+.spinner-overlay.show { display: flex; }
+.spinner-overlay .spinner { width: 48px; height: 48px; border: 4px solid var(--border-subtle); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.spinner-overlay p { margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Resumen */
+.resumen-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.resumen-card h6 { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; }
+.resumen-card p { font-size: 0.95rem; margin-bottom: 0.35rem; }
+.resumen-total { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem 1.5rem; margin-top: 1rem; }
+.resumen-total-line { display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); }
+.resumen-total-line span:first-child { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); }
+.resumen-total-line span:last-child { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+.resumen-total-detalle { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.85rem; }
+.resumen-total-detalle .item-line { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-light); }
+
+.alert-custom { background: rgba(26,107,255,0.1); border: 1px solid rgba(26,107,255,0.25); border-radius: 8px; color: var(--text-light); padding: 0.75rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; }
+
+#fecha-input { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+/* Multi-day range */
+.multi-dia-display { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.9rem; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <div class="text-center mb-3">
+        <a href="{{ url_for('main.index') }}" style="color:var(--text-muted);font-size:0.85rem;text-decoration:none;">
+            <i class="fa-solid fa-arrow-left me-1"></i>Volver al inicio
+        </a>
+    </div>
+    <h2 class="text-center mb-1" style="font-weight:900;">Reservar Turno</h2>
+    <p class="text-center" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:2rem;">Completa los pasos para agendar tu servicio</p>
+
+    <div class="progress-steps" id="progressSteps">
+        <div class="step active" data-step="1"><div class="circle">1</div><div class="label">Datos</div></div>
+        <div class="step" data-step="2"><div class="circle">2</div><div class="label">Vehiculo</div></div>
+        <div class="step" data-step="3"><div class="circle">3</div><div class="label">Servicio</div></div>
+        <div class="step" data-step="4"><div class="circle">4</div><div class="label">Detalles</div></div>
+        <div class="step" data-step="5"><div class="circle">5</div><div class="label">Fecha</div></div>
+    </div>
+
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p>Procesando reserva...</p>
+    </div>
+
+    <form id="wizardForm" novalidate>
+
+        <!-- STEP 1: Datos del Cliente -->
+        <div class="step-content active" data-step="1">
+            <div class="step-indicator"><span>PASO 1 — Datos del Cliente</span></div>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" required placeholder="Tu nombre">
+                    <div class="invalid-feedback">El nombre es obligatorio.</div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">Apellido *</label>
+                    <input type="text" class="form-control" id="apellido" name="apellido" required placeholder="Tu apellido">
+                    <div class="invalid-feedback">El apellido es obligatorio.</div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">Telefono *</label>
+                    <input type="tel" class="form-control" id="telefono" name="telefono" required placeholder="+595 981 234 567">
+                    <div class="invalid-feedback">Ingresa un telefono valido (+595 o 09XX).</div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">Cedula *</label>
+                    <input type="text" class="form-control" id="cedula" name="cedula" placeholder="1.234.567 o 1234567" inputmode="numeric" autocomplete="off">
+                    <div class="invalid-feedback">Ingresa tu numero de cedula.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-control" id="observaciones" name="observaciones" rows="2" placeholder="Algo que debamos saber..."></textarea>
+                </div>
+            </div>
+            <div class="wizard-nav">
+                <div></div>
+                <button type="button" class="btn-primary-custom" onclick="nextStep(1)">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Tipo de Vehiculo -->
+        <div class="step-content" data-step="2">
+            <div class="step-indicator"><span>PASO 2 — Tipo de Vehiculo</span></div>
+            <div class="option-grid" id="tipoVehiculoGrid">
+                <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando tipos de vehiculo...</div>
+            </div>
+            <input type="hidden" id="tipo_vehiculo_slug" name="tipo_vehiculo_slug">
+            <input type="hidden" id="tipo_vehiculo_nombre" name="tipo_vehiculo_nombre">
+            <div class="invalid-feedback" id="tvError" style="display:none;">Selecciona un tipo de vehiculo.</div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-sm-4">
+                    <label class="form-label">Marca *</label>
+                    <input type="text" class="form-control" id="marca" name="marca" required placeholder="Ej: Toyota">
+                    <div class="invalid-feedback">La marca es obligatoria.</div>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Modelo *</label>
+                    <input type="text" class="form-control" id="modelo" name="modelo" required placeholder="Ej: Corolla">
+                    <div class="invalid-feedback">El modelo es obligatorio.</div>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Anio</label>
+                    <input type="number" class="form-control" id="anio" name="anio" placeholder="2024" min="1990" max="2030">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">Color</label>
+                    <input type="text" class="form-control" id="color" name="color" placeholder="Blanco, Negro...">
+                </div>
+            </div>
+
+            <div class="wizard-nav mt-3">
+                <button type="button" class="btn-outline-custom" onclick="prevStep(2)"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                <button type="button" class="btn-primary-custom" onclick="nextStep(2)">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Categoria de Servicio -->
+        <div class="step-content" data-step="3">
+            <div class="step-indicator"><span>PASO 3 — Tipo de Servicio</span></div>
+            <div class="cat-grid" id="categoriaGrid">
+                <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando categorias...</div>
+            </div>
+            <input type="hidden" id="categoria_slug" name="categoria_slug">
+            <input type="hidden" id="categoria_nombre" name="categoria_nombre">
+            <div class="invalid-feedback" id="catError" style="display:none;">Selecciona un tipo de servicio.</div>
+            <div class="wizard-nav mt-3">
+                <button type="button" class="btn-outline-custom" onclick="prevStep(3)"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                <button type="button" class="btn-primary-custom" onclick="nextStep(3)">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 4: Detalles del servicio (condicional) -->
+        <div class="step-content" data-step="4">
+            <div class="step-indicator"><span>PASO 4 — Detalles del Servicio</span></div>
+
+            <!-- 4a: Lavado -> Nivel Suciedad -->
+            <div id="detalleLavado" style="display:none;">
+                <label class="form-label">Nivel de suciedad</label>
+                <div class="option-grid" id="tipoLavadoGrid">
+                    <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+                </div>
+                <input type="hidden" id="tipo_lavado_slug">
+
+                <!-- 4b: Si Normal -> SubTipo -->
+                <div id="detalleNormal" style="display:none;margin-top:1.25rem;">
+                    <label class="form-label">Que incluye?</label>
+                    <div class="option-grid" id="subTipoGrid"></div>
+                    <input type="hidden" id="subtipo_slug">
+                </div>
+
+                <!-- 4c: Si Alta/Extrema -> Tarjeta descriptiva -->
+                <div id="detalleCerrado" style="display:none;margin-top:1rem;"></div>
+            </div>
+
+            <!-- 4d: Detallado -->
+            <div id="detalleDetallado" style="display:none;">
+                <label class="form-label">Tipo de detallado</label>
+                <div class="option-grid" id="tipoDetalladoGrid">
+                    <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+                </div>
+                <input type="hidden" id="tipo_detallado_slug">
+                <div id="detalleDetalladoInfo" style="display:none;margin-top:1rem;"></div>
+            </div>
+
+            <!-- 4e: Integral -->
+            <div id="detalleIntegral" style="display:none;">
+                <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando informacion...</div>
+            </div>
+
+            <!-- 4f: Tratamientos Especiales -->
+            <div id="detalleTratamientos" style="display:none;">
+                <label class="form-label">Tratamientos disponibles</label>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Selecciona los tratamientos que deseas contratar. El precio y tiempo se calculan automaticamente.</p>
+                <div id="tratamientosList" style="margin-top:0.5rem;">
+                    <div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+                </div>
+            </div>
+
+            <div class="wizard-nav mt-3">
+                <button type="button" class="btn-outline-custom" onclick="prevStep(4)"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                <button type="button" class="btn-primary-custom" onclick="nextStep(4)">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 5: Fecha y Horario + Resumen -->
+        <div class="step-content" data-step="5">
+            <div class="step-indicator"><span>PASO 5 — Fecha y Horario</span></div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label">Selecciona una fecha *</label>
+                    <input type="date" class="form-control" id="fecha-input" name="fecha">
+                    <div class="invalid-feedback" id="fechaError">Selecciona una fecha valida (hoy o futura).</div>
+                    <div id="fechaFinWrap" style="display:none;margin-top:0.75rem;">
+                        <label class="form-label">Fecha de finalizacion</label>
+                        <div class="multi-dia-display" id="fechaFinDisplay">--</div>
+                        <input type="hidden" id="fecha_fin" name="fecha_fin">
+                        <input type="hidden" id="dias_bloqueo" name="dias_bloqueo">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Horarios disponibles</label>
+                    <div id="horariosContainer">
+                        <p style="color:var(--text-muted);font-size:0.85rem;">Selecciona una fecha para ver horarios.</p>
+                    </div>
+                    <input type="hidden" id="hora" name="hora">
+                    <div class="invalid-feedback" id="horaError" style="display:none;">Selecciona un horario.</div>
+                </div>
+            </div>
+
+            <hr style="border-color:var(--border-subtle);margin:1.5rem 0;">
+
+            <h5 style="font-weight:700;margin-bottom:1rem;">Resumen de tu Reserva</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="resumen-card">
+                        <h6>Cliente</h6>
+                        <p id="resumen-nombre">--</p>
+                        <p id="resumen-telefono" style="color:var(--text-muted);font-size:0.85rem;">--</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="resumen-card">
+                        <h6>Vehiculo</h6>
+                        <p id="resumen-vehiculo">--</p>
+                        <p id="resumen-color" style="color:var(--text-muted);font-size:0.85rem;">--</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="resumen-card">
+                        <h6>Servicio</h6>
+                        <p id="resumen-servicio">--</p>
+                        <div id="resumen-detalle" style="color:var(--text-muted);font-size:0.82rem;margin-top:0.25rem;"></div>
+                        <div id="resumen-nota" style="display:none;margin-top:0.5rem;padding:0.5rem;background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:6px;font-size:0.72rem;color:#f0c040;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="resumen-card">
+                        <h6>Fecha y Hora</h6>
+                        <p id="resumen-fecha">--</p>
+                        <p id="resumen-hora" style="color:var(--text-muted);font-size:0.85rem;">--</p>
+                        <p id="resumen-fin" style="color:var(--accent);font-size:0.8rem;font-weight:600;margin-top:0.35rem;display:none;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resumen-total">
+                <div class="resumen-total-detalle" id="resumenDetalleItems"></div>
+                <div class="resumen-total-line" style="border-top:none;padding-top:0;padding-bottom:0.5rem;">
+                    <span style="font-size:0.8rem;font-weight:600;color:var(--text-muted);"><i class="fa-regular fa-clock me-2"></i>TIEMPO ESTIMADO</span>
+                    <span id="resumenDuracion" style="font-size:1.1rem;font-weight:700;color:var(--white);">--</span>
+                </div>
+                <div class="resumen-total-line">
+                    <span>TOTAL</span>
+                    <span id="resumenTotalMonto">Gs 0</span>
+                </div>
+            </div>
+
+            <div class="alert-custom mt-3"><i class="fa-regular fa-circle-check me-2"></i> Al confirmar, te contactaremos para coordinar el turno.</div>
+
+            <div class="wizard-nav mt-3">
+                <button type="button" class="btn-outline-custom" onclick="prevStep(5)"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                <button type="button" class="btn-primary-custom" id="btnConfirmar" onclick="submitReserva()">
+                    <i class="fa-regular fa-calendar-check me-1"></i> Confirmar Reserva
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    'use strict';
+
+    var currentStep = 1;
+    var totalSteps = 5;
+
+    var vehiculosData = [];
+    var categoriasData = [];
+    var lavadosData = [];
+    var subtiposData = [];
+    var detalladosData = [];
+
+    var selectedVehiculo = null;
+    var selectedCategoria = null;
+    var selectedLavadoSlug = null;
+    var selectedSubtipoSlug = null;
+    var selectedDetalladoSlug = null;
+    var pricingResult = null;
+
+    var hoy = new Date().toISOString().split('T')[0];
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // ==================== INIT LOAD ====================
+    fetch('/api/publica/tipos-vehiculo')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) { vehiculosData = d.tipos_vehiculo; renderVehiculos(); } });
+
+    fetch('/api/publica/categorias-servicio')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) { categoriasData = d.categorias; renderCategorias(); } });
+
+    fetch('/api/publica/tipos-lavado')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) lavadosData = d.tipos_lavado; });
+
+    fetch('/api/publica/tipos-detallado')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) detalladosData = d.tipos_detallado; });
+
+    // ==================== HELPERS ====================
+    function formatGuarani(n) {
+        return 'Gs ' + Number(n || 0).toLocaleString('es-PY');
+    }
+
+    function formatearDuracion(minutos) {
+        if (!minutos || minutos <= 0) return '--';
+        var h = Math.floor(minutos / 60);
+        var m = minutos % 60;
+        var p = [];
+        if (h > 0) p.push(h + 'h');
+        if (m > 0) p.push(m + 'min');
+        return p.join(' ');
+    }
+
+    function formatearFecha(fechaStr) {
+        if (!fechaStr) return '--';
+        var f = new Date(fechaStr + 'T12:00:00');
+        return f.toLocaleDateString('es-PY', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    }
+
+    function calcularHoraFin(horaStr, durMin) {
+        if (!horaStr || !durMin) return null;
+        var parts = horaStr.split(':');
+        var total = parseInt(parts[0]) * 60 + parseInt(parts[1]) + durMin;
+        var hh = String(Math.floor(total / 60) % 24).padStart(2, '0');
+        var mm = String(total % 60).padStart(2, '0');
+        return hh + ':' + mm;
+    }
+
+    // ==================== STEP 2: VEHICULOS ====================
+    function renderVehiculos() {
+        var grid = document.getElementById('tipoVehiculoGrid');
+        if (!vehiculosData.length) {
+            grid.innerHTML = '<p style="color:var(--danger);">No hay tipos de vehiculo disponibles.</p>';
+            return;
+        }
+        var html = '';
+        vehiculosData.forEach(function(v) {
+            html += '<div class="option-card" data-slug="' + escapeHtml(v.slug) + '" data-nombre="' + escapeHtml(v.nombre) + '" data-id="' + v.id + '">';
+            if (v.icono) html += '<i class="' + escapeHtml(v.icono) + '"></i>';
+            html += '<span>' + escapeHtml(v.nombre) + '</span>';
+            if (v.descripcion) html += '<small>' + escapeHtml(v.descripcion) + '</small>';
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.option-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+                selectedVehiculo = {
+                    slug: this.dataset.slug,
+                    nombre: this.dataset.nombre,
+                    id: parseInt(this.dataset.id)
+                };
+                document.getElementById('tipo_vehiculo_slug').value = this.dataset.slug;
+                document.getElementById('tipo_vehiculo_nombre').value = this.dataset.nombre;
+                document.getElementById('tvError').style.display = 'none';
+            });
+        });
+    }
+
+    // ==================== STEP 3: CATEGORIAS ====================
+    function renderCategorias() {
+        var grid = document.getElementById('categoriaGrid');
+        if (!categoriasData.length) {
+            grid.innerHTML = '<p style="color:var(--danger);">No hay categorias disponibles.</p>';
+            return;
+        }
+        var html = '';
+        categoriasData.forEach(function(c) {
+            html += '<div class="cat-card" data-slug="' + escapeHtml(c.slug) + '" data-nombre="' + escapeHtml(c.nombre) + '" data-usa-nivel="' + c.usa_nivel_suciedad + '" data-multidia="' + c.permite_multidias + '">';
+            html += '<i class="fa-solid ' + getCatIcon(c.slug) + '"></i>';
+            html += '<h6>' + escapeHtml(c.nombre) + '</h6>';
+            if (c.descripcion) html += '<small>' + escapeHtml(c.descripcion) + '</small>';
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.cat-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                grid.querySelectorAll('.cat-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+                selectedCategoria = {
+                    slug: this.dataset.slug,
+                    nombre: this.dataset.nombre,
+                    usa_nivel_suciedad: this.dataset.usaNivel === 'True',
+                    permite_multidias: this.dataset.multidia === 'True'
+                };
+                document.getElementById('categoria_slug').value = this.dataset.slug;
+                document.getElementById('categoria_nombre').value = this.dataset.nombre;
+                document.getElementById('catError').style.display = 'none';
+            });
+        });
+    }
+
+    function getCatIcon(slug) {
+        var map = {
+            'lavado': 'fa-droplet',
+            'detallado': 'fa-spray-can-sparkles',
+            'integral': 'fa-star',
+            'tratamientos': 'fa-wand-magic-sparkles'
+        };
+        return map[slug] || 'fa-circle';
+    }
+
+    // ==================== STEP 4: BUILD CONDITIONAL ====================
+    function buildStep4() {
+        var cat = selectedCategoria;
+        if (!cat) return;
+
+        document.getElementById('detalleLavado').style.display = 'none';
+        document.getElementById('detalleDetallado').style.display = 'none';
+        document.getElementById('detalleIntegral').style.display = 'none';
+        document.getElementById('detalleTratamientos').style.display = 'none';
+        document.getElementById('detalleNormal').style.display = 'none';
+        document.getElementById('detalleCerrado').style.display = 'none';
+
+        if (cat.slug === 'lavado') {
+            document.getElementById('detalleLavado').style.display = '';
+            renderTiposLavado();
+        } else if (cat.slug === 'detallado') {
+            document.getElementById('detalleDetallado').style.display = '';
+            renderTiposDetallado();
+        } else if (cat.slug === 'integral') {
+            document.getElementById('detalleIntegral').style.display = '';
+            loadIntegralInfo();
+        } else if (cat.slug === 'tratamientos') {
+            document.getElementById('detalleTratamientos').style.display = '';
+            loadTratamientos();
+        }
+    }
+
+    // --- Lavado types ---
+    function renderTiposLavado() {
+        var grid = document.getElementById('tipoLavadoGrid');
+        if (!lavadosData.length) {
+            grid.innerHTML = '<p style="color:var(--text-muted);">Sin niveles de suciedad configurados.</p>';
+            return;
+        }
+        var html = '';
+        lavadosData.forEach(function(tl) {
+            html += '<div class="option-card" data-slug="' + tl.slug + '" data-es-cerrado="' + tl.es_cerrado + '">';
+            html += '<i class="fa-solid ' + (tl.slug === 'normal' ? 'fa-check-circle' : tl.slug === 'alta' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation') + '"></i>';
+            html += '<span>' + tl.nombre + '</span>';
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.option-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+
+                selectedLavadoSlug = this.dataset.slug;
+                document.getElementById('tipo_lavado_slug').value = this.dataset.slug;
+
+                document.getElementById('detalleNormal').style.display = 'none';
+                document.getElementById('detalleCerrado').style.display = 'none';
+                selectedSubtipoSlug = null;
+                document.getElementById('subtipo_slug').value = '';
+                pricingResult = null;
+
+                if (this.dataset.slug === 'normal') {
+                    loadSubtipos('normal');
+                } else {
+                    loadPrecioInfo(this.dataset.slug, null);
+                }
+            });
+        });
+    }
+
+    function loadSubtipos(tipoLavadoSlug) {
+        var grid = document.getElementById('subTipoGrid');
+        grid.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>';
+        document.getElementById('detalleNormal').style.display = '';
+
+        fetch('/api/publica/subtipos-lavado?tipo_lavado_slug=' + tipoLavadoSlug)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.subtipos.length) {
+                    subtiposData = d.subtipos;
+                    var html = '';
+                    subtiposData.forEach(function(st) {
+                        html += '<div class="option-card" data-slug="' + st.slug + '" data-nombre="' + st.nombre + '">';
+                        html += '<i class="fa-solid ' + getSubtipoIcon(st.slug) + '"></i>';
+                        html += '<span>' + st.nombre + '</span>';
+                        html += '</div>';
+                    });
+                    grid.innerHTML = html;
+
+                    grid.querySelectorAll('.option-card').forEach(function(card) {
+                        card.addEventListener('click', function() {
+                            grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+                            this.classList.add('selected');
+                            selectedSubtipoSlug = this.dataset.slug;
+                            document.getElementById('subtipo_slug').value = this.dataset.slug;
+                            loadPrecioInfo('normal', this.dataset.slug);
+                        });
+                    });
+                } else {
+                    grid.innerHTML = '<p style="color:var(--text-muted);">Sin sub-opciones configuradas.</p>';
+                }
+            })
+            .catch(function() {
+                grid.innerHTML = '<p style="color:var(--danger);">Error al cargar opciones.</p>';
+            });
+    }
+
+    function getSubtipoIcon(slug) {
+        var map = { 'interior': 'fa-car-side', 'exterior': 'fa-car', 'completo': 'fa-car-on' };
+        return map[slug] || 'fa-circle';
+    }
+
+    // --- Detallado types ---
+    function renderTiposDetallado() {
+        var grid = document.getElementById('tipoDetalladoGrid');
+        if (!detalladosData.length) {
+            grid.innerHTML = '<p style="color:var(--text-muted);">Sin opciones de detallado configuradas.</p>';
+            return;
+        }
+        var html = '';
+        detalladosData.forEach(function(td) {
+            html += '<div class="option-card" data-slug="' + td.slug + '" data-nombre="' + td.nombre + '">';
+            html += '<i class="fa-solid fa-shield-halved"></i>';
+            html += '<span>' + td.nombre + '</span>';
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.option-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                grid.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+                selectedDetalladoSlug = this.dataset.slug;
+                document.getElementById('tipo_detallado_slug').value = this.dataset.slug;
+                pricingResult = null;
+                loadPrecioInfoDetallado(this.dataset.slug);
+            });
+        });
+    }
+
+    // --- Integral ---
+    function loadIntegralInfo() {
+        loadPrecioInfoIntegral();
+    }
+
+    // --- Tratamientos (se usan los servicios legacy como base) ---
+    function loadTratamientos() {
+        var cont = document.getElementById('tratamientosList');
+        fetch('/servicios-json')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var trat = data.filter(function(s) {
+                    return s.categoria === 'tratamiento_pintura';
+                });
+                if (!trat.length) {
+                    cont.innerHTML = '<p style="color:var(--text-muted);">No hay tratamientos disponibles.</p>';
+                    return;
+                }
+                var html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
+                trat.forEach(function(s) {
+                    html += '<label class="servicio-check" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:8px;cursor:pointer;">';
+                    html += '<input type="checkbox" value="' + s.id + '" class="trat-chk" data-id="' + s.id + '" data-nombre="' + s.nombre + '" data-precio="' + s.precio + '" data-tiempo="' + s.tiempo_estimado_min + '">';
+                    html += '<span class="check-box" style="width:20px;height:20px;border-radius:4px;border:2px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.65rem;color:transparent;"><i class="fa-solid fa-check"></i></span>';
+                    html += '<span style="flex:1;font-size:0.9rem;">' + s.nombre + '</span>';
+                    html += '<span style="font-weight:700;color:var(--accent);font-size:0.9rem;">' + formatGuarani(s.precio) + '</span>';
+                    html += '</label>';
+                });
+                html += '</div>';
+                cont.innerHTML = html;
+
+                cont.querySelectorAll('.trat-chk').forEach(function(cb) {
+                    cb.addEventListener('change', function() {
+                        var label = this.closest('.servicio-check');
+                        if (this.checked) {
+                            label.style.borderColor = 'var(--accent)';
+                        } else {
+                            label.style.borderColor = 'var(--border-subtle)';
+                        }
+                    });
+                });
+            })
+            .catch(function() {
+                cont.innerHTML = '<p style="color:var(--danger);">Error al cargar tratamientos.</p>';
+            });
+    }
+
+    // ==================== PRICING LOOKUP ====================
+    function loadPrecioInfo(lavadoSlug, subtipoSlug) {
+        var cat = document.getElementById('detalleCerrado');
+        if (!lavadoSlug) { cat.style.display = 'none'; return; }
+
+        var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
+                  '&categoria_slug=' + encodeURIComponent(selectedCategoria.slug) +
+                  '&tipo_lavado_slug=' + encodeURIComponent(lavadoSlug);
+        if (subtipoSlug) url += '&subtipo_slug=' + encodeURIComponent(subtipoSlug);
+
+        cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando precio...</div>';
+        cat.style.display = '';
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.precio) {
+                    pricingResult = d.precio;
+                    renderPrecioCard(cat, lavadoSlug, d.precio);
+                } else {
+                    cat.innerHTML = '<p style="color:var(--text-muted);">' + escapeHtml(d.error || 'No se encontro precio para esta combinacion.') + '</p>';
+                    pricingResult = null;
+                }
+            })
+            .catch(function() {
+                cat.innerHTML = '<p style="color:var(--danger);">Error al consultar precio.</p>';
+                pricingResult = null;
+            });
+    }
+
+    function loadPrecioInfoDetallado(detalladoSlug) {
+        var cat = document.getElementById('detalleDetalladoInfo');
+        var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
+                  '&categoria_slug=detallado&tipo_detallado_slug=' + encodeURIComponent(detalladoSlug);
+
+        cat.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Consultando precio...</div>';
+        cat.style.display = '';
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.precio) {
+                    pricingResult = d.precio;
+                    renderPrecioCard(cat, 'detallado', d.precio);
+                } else {
+                    cat.innerHTML = '<p style="color:var(--text-muted);">' + escapeHtml(d.error || 'Sin informacion.') + '</p>';
+                    pricingResult = null;
+                }
+            })
+            .catch(function() {
+                cat.innerHTML = '<p style="color:var(--danger);">Error.</p>';
+                pricingResult = null;
+            });
+    }
+
+    function loadPrecioInfoIntegral() {
+        var cat = document.getElementById('detalleIntegral');
+        var url = '/api/publica/precio?vehiculo_slug=' + encodeURIComponent(selectedVehiculo.slug) +
+                  '&categoria_slug=integral';
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.precio) {
+                    pricingResult = d.precio;
+                    renderPrecioCard(cat, 'integral', d.precio);
+                } else {
+                    cat.innerHTML = '<div class="info-card"><p style="color:var(--text-muted);text-align:center;">' + escapeHtml(d.error || 'No disponible.') + '</p></div>';
+                    pricingResult = null;
+                }
+            })
+            .catch(function() {
+                cat.innerHTML = '<div class="info-card"><p style="color:var(--danger);text-align:center;">Error.</p></div>';
+                pricingResult = null;
+            });
+    }
+
+    function renderPrecioCard(container, tipo, precio) {
+        var esEstimado = precio.es_precio_estimado;
+        var valorPreview = esEstimado && precio.precio_estimado ? formatGuarani(precio.precio_estimado) + ' (estimado)' :
+                           esEstimado ? formatGuarani(precio.precio_estimado) :
+                           precio.precio_fijo ? formatGuarani(precio.precio_fijo) : '--';
+        var valorPrecio = esEstimado ?
+            (precio.precio_estimado ? formatGuarani(precio.precio_estimado) : '--') :
+            (precio.precio_fijo ? formatGuarani(precio.precio_fijo) : '--');
+
+        var html = '<div class="info-card">';
+        if (precio.descripcion_publica) {
+            html += '<div class="info-header"><i class="fa-solid fa-circle-info"></i><div><h6 style="font-weight:700;margin:0;">' + precio.descripcion_publica + '</h6></div></div>';
+        }
+        html += '<div class="info-meta">';
+        html += '<div class="info-meta-item"><i class="fa-regular fa-clock"></i> ' + formatearDuracion(precio.tiempo_estimado_min) + '</div>';
+        html += '<div class="info-meta-item"><span style="font-weight:700;color:var(--accent);">' + valorPreview + '</span></div>';
+        if (precio.dias_bloqueo > 0) {
+            html += '<div class="info-meta-item"><i class="fa-regular fa-calendar-days"></i> ' + precio.dias_bloqueo + ' dia(s)</div>';
+        }
+        html += '</div>';
+        if (precio.nota_inspeccion) {
+            html += '<div class="info-nota"><i class="fa-solid fa-triangle-exclamation"></i><span>' + escapeHtml(precio.nota_inspeccion) + '</span></div>';
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ==================== NAVIGATION ====================
+    window.nextStep = function(from) {
+        if (!validateStep(from)) return;
+        document.querySelector('.step-content[data-step="' + from + '"]').classList.remove('active');
+        document.querySelector('.step[data-step="' + from + '"]').classList.remove('active');
+        document.querySelector('.step[data-step="' + from + '"]').classList.add('done');
+        currentStep = from + 1;
+        document.querySelector('.step-content[data-step="' + currentStep + '"]').classList.add('active');
+        document.querySelector('.step[data-step="' + currentStep + '"]').classList.add('active');
+
+        if (currentStep === 4) buildStep4();
+        if (currentStep === 5) {
+            document.getElementById('fecha-input').value = hoy;
+            updateResumen();
+            cargarHorarios(hoy);
+        }
+        window.scrollTo({ top: document.querySelector('.wizard-container').offsetTop - 100, behavior: 'smooth' });
+    };
+
+    window.prevStep = function(from) {
+        document.querySelector('.step-content[data-step="' + from + '"]').classList.remove('active');
+        document.querySelector('.step[data-step="' + from + '"]').classList.remove('active');
+        document.querySelector('.step[data-step="' + (from - 1) + '"]').classList.remove('done');
+        currentStep = from - 1;
+        document.querySelector('.step-content[data-step="' + currentStep + '"]').classList.add('active');
+        document.querySelector('.step[data-step="' + currentStep + '"]').classList.add('active');
+        if (from === 5) {
+            document.getElementById('hora').value = '';
+            document.querySelectorAll('.horario-btn').forEach(function(b) { b.classList.remove('selected'); });
+        }
+        window.scrollTo({ top: document.querySelector('.wizard-container').offsetTop - 100, behavior: 'smooth' });
+    };
+
+    // ==================== VALIDATION ====================
+    function validateStep(step) {
+        var valid = true;
+        if (step === 1) {
+            ['nombre','apellido','telefono','cedula'].forEach(function(id) {
+                var el = document.getElementById(id);
+                el.classList.remove('is-invalid');
+                if (!el.value.trim()) { el.classList.add('is-invalid'); valid = false; }
+            });
+            var cedula = document.getElementById('cedula');
+            if (cedula.value.trim() && !/^[A-Z0-9.\-]{5,20}$/i.test(cedula.value.trim())) {
+                cedula.classList.add('is-invalid'); valid = false;
+            }
+            var tel = document.getElementById('telefono');
+            if (tel.value.trim() && !/^(\+595|09)\d{7,9}$/.test(tel.value.replace(/[\s\-]/g,''))) {
+                tel.classList.add('is-invalid'); valid = false;
+            }
+        }
+        if (step === 2) {
+            if (!selectedVehiculo) {
+                document.getElementById('tvError').style.display = 'block'; valid = false;
+            } else {
+                document.getElementById('tvError').style.display = 'none';
+            }
+            ['marca','modelo'].forEach(function(id) {
+                var el = document.getElementById(id);
+                el.classList.remove('is-invalid');
+                if (!el.value.trim()) { el.classList.add('is-invalid'); valid = false; }
+            });
+        }
+        if (step === 3) {
+            if (!selectedCategoria) {
+                document.getElementById('catError').style.display = 'block'; valid = false;
+            } else {
+                document.getElementById('catError').style.display = 'none';
+            }
+        }
+        return valid;
+    }
+
+    // ==================== FECHA / HORARIOS ====================
+    var fechaInput = document.getElementById('fecha-input');
+    fechaInput.setAttribute('min', hoy);
+    fechaInput.value = hoy;
+
+    fechaInput.addEventListener('change', function() {
+        this.classList.remove('is-invalid');
+        document.getElementById('hora').value = '';
+        document.querySelectorAll('.horario-btn').forEach(function(b) { b.classList.remove('selected'); });
+        var fecha = this.value;
+        if (!fecha) return;
+        updateResumen();
+        cargarHorarios(fecha);
+    });
+
+    function cargarHorarios(fecha) {
+        var container = document.getElementById('horariosContainer');
+        var dur = (pricingResult && pricingResult.tiempo_estimado_min) ? pricingResult.tiempo_estimado_min : 60;
+        container.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Buscando horarios...</div>';
+
+        fetch('/horarios-disponibles?fecha=' + fecha + '&duracion_min=' + dur)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success) {
+                    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">' + escapeHtml(data.error) + '</p>';
+                    return;
+                }
+                var html = '<div class="horario-grid">';
+                data.horarios.forEach(function(h) {
+                    var cls = h.disponible ? 'horario-btn' : 'horario-btn disabled';
+                    var txt = h.disponible ? h.hora : h.hora + ' <span class="lugares">Completo</span>';
+                    var lugares = h.disponible ? '<span class="lugares">' + h.lugares + ' lugar(es)</span>' : '';
+                    html += '<div class="' + cls + '" data-hora="' + h.hora + '" data-disponible="' + h.disponible + '">' + txt + lugares + '</div>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+
+                container.querySelectorAll('.horario-btn:not(.disabled)').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        container.querySelectorAll('.horario-btn').forEach(function(b) { b.classList.remove('selected'); });
+                        this.classList.add('selected');
+                        document.getElementById('hora').value = this.dataset.hora;
+                        document.getElementById('horaError').style.display = 'none';
+                        updateResumen();
+                    });
+                });
+
+                updateMultiDiaInfo(fecha, dur);
+            })
+            .catch(function() {
+                container.innerHTML = '<p style="color:var(--danger);">Error al cargar horarios.</p>';
+            });
+    }
+
+    function updateMultiDiaInfo(fecha, dur) {
+        var wrap = document.getElementById('fechaFinWrap');
+        var esIntegral = selectedCategoria && selectedCategoria.permite_multidias;
+        if (!esIntegral || !pricingResult) {
+            wrap.style.display = 'none';
+            return;
+        }
+        wrap.style.display = '';
+        var dias = pricingResult.dias_bloqueo || 1;
+
+        fetch('/api/publica/disponibilidad-multidia?fecha=' + fecha + '&dias=' + dias + '&duracion_min=' + dur)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.resultado) {
+                    var res = d.resultado;
+                    if (res.bloqueos && res.bloqueos.length) {
+                        var ult = res.bloqueos[res.bloqueos.length - 1];
+                        document.getElementById('fechaFinDisplay').textContent = formatearFecha(ult.fecha);
+                        document.getElementById('fecha_fin').value = ult.fecha;
+                        document.getElementById('dias_bloqueo').value = dias;
+                    }
+                    if (!res.disponible && res.dias_problema.length) {
+                        document.getElementById('fechaFinDisplay').textContent += ' (ATENCION: conflictos en ' + res.dias_problema.join(', ') + ')';
+                    }
+                }
+            })
+            .catch(function() {});
+    }
+
+    // ==================== RESUMEN ====================
+    function updateResumen() {
+        var g = function(id) { return document.getElementById(id).value; };
+
+        document.getElementById('resumen-nombre').textContent = g('nombre') + ' ' + g('apellido');
+        document.getElementById('resumen-telefono').textContent = 'CI: ' + g('cedula') + ' · ' + g('telefono');
+        var marca = g('marca'), modelo = g('modelo');
+        document.getElementById('resumen-vehiculo').textContent = marca + ' ' + modelo;
+        var anio = g('anio'), color = g('color');
+        document.getElementById('resumen-color').textContent = (anio ? anio : '') + ' ' + (color || '') || '--';
+
+        var svc = '';
+        if (selectedVehiculo) svc += selectedVehiculo.nombre + ' · ';
+        if (selectedCategoria) svc += selectedCategoria.nombre;
+        if (selectedLavadoSlug) {
+            var tl = lavadosData.find(function(l) { return l.slug === selectedLavadoSlug; });
+            if (tl) svc += ' - ' + tl.nombre;
+        }
+        if (selectedSubtipoSlug) {
+            var st = subtiposData.find(function(s) { return s.slug === selectedSubtipoSlug; });
+            if (st) svc += ' (' + st.nombre + ')';
+        }
+        if (selectedDetalladoSlug) {
+            var td = detalladosData.find(function(d) { return d.slug === selectedDetalladoSlug; });
+            if (td) svc += ' · ' + td.nombre;
+        }
+        document.getElementById('resumen-servicio').textContent = svc || '--';
+
+        var detalle = document.getElementById('resumen-detalle');
+        if (pricingResult && pricingResult.descripcion_publica) {
+            detalle.textContent = pricingResult.descripcion_publica;
+        } else {
+            detalle.textContent = '';
+        }
+
+        var notaEl = document.getElementById('resumen-nota');
+        if (pricingResult && pricingResult.nota_inspeccion) {
+            notaEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>' + escapeHtml(pricingResult.nota_inspeccion);
+            notaEl.style.display = '';
+        } else {
+            notaEl.style.display = 'none';
+        }
+
+        var esEstimado = pricingResult && pricingResult.es_precio_estimado;
+        var total = esEstimado ? (pricingResult.precio_estimado || 0) : (pricingResult ? pricingResult.precio_fijo || 0 : 0);
+        var dur = pricingResult ? pricingResult.tiempo_estimado_min : 0;
+
+        var fecha = g('fecha');
+        var hora = document.getElementById('hora').value;
+        document.getElementById('resumen-fecha').textContent = fecha ? formatearFecha(fecha) : '--';
+        document.getElementById('resumen-hora').textContent = hora ? hora + ' hs' : '--';
+
+        var finEl = document.getElementById('resumen-fin');
+        if (hora && dur > 0) {
+            var finHora = calcularHoraFin(hora, dur);
+            finEl.textContent = 'Finaliza aprox: ' + finHora + ' hs';
+            finEl.style.display = '';
+        } else {
+            finEl.style.display = 'none';
+        }
+
+        var detalleItems = document.getElementById('resumenDetalleItems');
+        var tipoText = esEstimado ? 'Precio estimado' : 'Precio fijo';
+        detalleItems.innerHTML = '<div class="item-line"><span>' + tipoText + '</span><span>' + formatGuarani(total) + '</span></div>';
+        document.getElementById('resumenTotalMonto').textContent = formatGuarani(total);
+        document.getElementById('resumenDuracion').textContent = formatearDuracion(dur);
+    }
+
+    // ==================== SUBMIT ====================
+    window.submitReserva = function() {
+        if (!validateStep(4)) return;
+        if (!document.getElementById('hora').value) {
+            document.getElementById('horaError').style.display = 'block';
+            return;
+        }
+
+        var form = document.getElementById('wizardForm');
+
+        var servicioIds = [];
+        var tratChks = document.querySelectorAll('.trat-chk:checked');
+        tratChks.forEach(function(cb) { servicioIds.push(parseInt(cb.dataset.id)); });
+
+        var data = {
+            nombre: form.querySelector('#nombre').value.trim(),
+            apellido: form.querySelector('#apellido').value.trim(),
+            cedula: form.querySelector('#cedula').value.trim(),
+            telefono: form.querySelector('#telefono').value.trim(),
+            tipo_vehiculo_slug: selectedVehiculo ? selectedVehiculo.slug : null,
+            tipo_vehiculo: selectedVehiculo ? selectedVehiculo.nombre : null,
+            marca: form.querySelector('#marca').value.trim(),
+            modelo: form.querySelector('#modelo').value.trim(),
+            anio: form.querySelector('#anio').value ? parseInt(form.querySelector('#anio').value) : null,
+            color: form.querySelector('#color').value.trim() || null,
+            categoria_slug: selectedCategoria ? selectedCategoria.slug : null,
+            tipo_lavado_slug: selectedLavadoSlug || null,
+            subtipo_slug: selectedSubtipoSlug || null,
+            tipo_detallado_slug: selectedDetalladoSlug || null,
+            servicio_ids: servicioIds,
+            fecha: form.querySelector('#fecha-input').value,
+            hora: form.querySelector('#hora').value,
+            fecha_fin: form.querySelector('#fecha_fin').value || null,
+            dias_bloqueo: form.querySelector('#dias_bloqueo').value ? parseInt(form.querySelector('#dias_bloqueo').value) : null,
+            observaciones: form.querySelector('#observaciones').value.trim() || '',
+        };
+
+        document.getElementById('spinnerOverlay').classList.add('show');
+        document.getElementById('btnConfirmar').disabled = true;
+
+        fetch('{{ url_for("reservas.crear") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+            document.getElementById('spinnerOverlay').classList.remove('show');
+            document.getElementById('btnConfirmar').disabled = false;
+            if (result.success) {
+                window.location.href = '{{ url_for("reservas.confirmacion", token="__TOKEN__") }}'.replace('__TOKEN__', result.confirmacion_token);
+            } else {
+                var msg = result.error || 'Error al crear la reserva.';
+                if (result.errores) {
+                    msg = result.errores.map(function(e) { return e.error; }).join('<br>');
+                }
+                var container = document.querySelector('.wizard-container');
+                var banner = document.createElement('div');
+                banner.style.cssText = 'background:rgba(220,53,69,0.15);border:1px solid rgba(220,53,69,0.3);color:#f5a3a3;padding:1rem;border-radius:8px;margin-bottom:1rem;font-size:0.85rem;';
+                banner.innerHTML = '<i class="fa-solid fa-circle-exclamation me-2"></i>' + escapeHtml(msg);
+                container.prepend(banner);
+                setTimeout(function() { banner.remove(); }, 8000);
+            }
+        })
+        .catch(function() {
+            document.getElementById('spinnerOverlay').classList.remove('show');
+            document.getElementById('btnConfirmar').disabled = false;
+            alert('Error de conexion. Intentalo de nuevo.');
+        });
+    };
+
+    // Cedula filter
+    document.getElementById('cedula').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9.\-]/gi, '');
+    });
+
+    // Load initial horarios
+    cargarHorarios(hoy);
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Reserva Confirmada — Exclusive Auto Detail{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #111;
+    --bg-card: #1a1a1a;
+    --accent: #1a6bff;
+    --white: #fff;
+    --text-muted: #a0a0a0;
+    --border-subtle: #2a2a2a;
+    --success: #198754;
+    --warning: #ffc107;
+}
+body { background:var(--bg-primary); color:var(--white); font-family:'Montserrat',sans-serif; padding-top:80px; }
+.confirmacion-container { max-width:720px; margin:0 auto; padding:2rem 1rem 4rem; text-align:center; }
+.check-icon { width:80px; height:80px; border-radius:50%; background:rgba(25,135,84,0.15); border:3px solid var(--success); display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; font-size:2rem; color:var(--success); }
+.numero-reserva { font-weight:900; font-size:3.5rem; color:var(--accent); line-height:1; margin-bottom:0.25rem; }
+.label-reserva { font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:2rem; }
+.detalle-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:12px; padding:1.5rem; text-align:left; margin-bottom:1.5rem; }
+.detalle-card h6 { font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.75rem; }
+.detalle-card p { font-size:0.95rem; margin-bottom:0.35rem; }
+.detalle-card .servicio-item { display:inline-block; background:rgba(26,107,255,0.12); color:var(--accent); padding:0.25rem 0.75rem; border-radius:4px; font-size:0.8rem; font-weight:600; margin:0.15rem; }
+.detalle-card .svc-line { display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; padding:0.35rem 0; border-bottom:1px solid var(--border-subtle); }
+.detalle-card .svc-line:last-of-type { border-bottom:none; }
+.detalle-card .svc-precio { color:var(--text-muted); font-weight:600; }
+.detalle-card .svc-total { display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem; padding-top:0.75rem; border-top:2px solid var(--accent); font-weight:900; }
+.detalle-card .svc-total span:last-child { color:var(--accent); font-size:1.25rem; }
+.mensaje { background:rgba(26,107,255,0.08); border:1px solid rgba(26,107,255,0.2); border-radius:8px; padding:1rem; font-size:0.9rem; color:var(--text-light); margin-bottom:2rem; }
+.mensaje.estimado { background:rgba(255,193,7,0.08); border:1px solid rgba(255,193,7,0.2); color:#f0c040; }
+.whatsapp-btn { display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 2rem; background:#25d366; color:var(--white); font-weight:700; border-radius:8px; font-size:0.9rem; transition:0.25s; text-decoration:none; }
+.whatsapp-btn:hover { background:#1da851; color:var(--white); transform:translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirmacion-container">
+    <div class="check-icon"><i class="fa-solid fa-check"></i></div>
+    <div class="numero-reserva">#{{ reserva.id }}</div>
+    <div class="label-reserva">Numero de Reserva</div>
+
+    <div class="detalle-card">
+        <h6>Cliente</h6>
+        <p>{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</p>
+        <p style="color:var(--text-muted);font-size:0.85rem;">CI: {{ reserva.cliente.cedula }} · {{ reserva.cliente.telefono }}</p>
+    </div>
+
+    <div class="detalle-card">
+        <h6>Vehiculo</h6>
+        {% set v = reserva.vehiculos.first() %}
+        {% if v %}
+        <p>{{ v.marca }} {{ v.modelo }}{% if v.anio %} ({{ v.anio }}){% endif %}{% if v.color %} — {{ v.color }}{% endif %}</p>
+        <p style="color:var(--text-muted);font-size:0.85rem;">
+            {{ v.tipo_vehiculo }}
+            {% if v.tipo_vehiculo_rel %} — {{ v.tipo_vehiculo_rel.nombre }}{% endif %}
+        </p>
+        {% if v.nivel_suciedad %}
+        <p style="color:var(--text-muted);font-size:0.8rem;">Nivel: {{ v.nivel_suciedad | capitalize }}</p>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Servicio</h6>
+        {% if reserva.categoria_servicio %}
+        <p style="font-weight:700;">{{ reserva.categoria_servicio.nombre }}</p>
+        {% endif %}
+
+        {% if reserva.tipo_lavado %}
+        <p style="font-size:0.85rem;color:var(--text-light);">Nivel: {{ reserva.tipo_lavado.nombre }}
+        {% if reserva.subtipo_lavado %} — {{ reserva.subtipo_lavado.nombre }}{% endif %}</p>
+        {% endif %}
+
+        {% if reserva.tipo_detallado %}
+        <p style="font-size:0.85rem;color:var(--text-light);">{{ reserva.tipo_detallado.nombre }}</p>
+        {% endif %}
+
+        {% set items = reserva.items %}
+        {% if items %}
+        <div style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid var(--border-subtle);">
+            {% for item in reserva.items %}
+            <div class="svc-line">
+                <span>{{ item.descripcion or item.tipo_item }}</span>
+                <span class="svc-precio">
+                    {% if item.precio_aplicado is not none and item.precio_aplicado != 0 %}
+                    Gs {{ item.precio_aplicado | int | thousandsep }}
+                    {% else %}
+                    --
+                    {% endif %}
+                </span>
+            </div>
+            {% endfor %}
+            <div class="svc-total">
+                <span>Total</span>
+                {% set tot = items | sum(attribute='precio_aplicado') %}
+                <span>
+                    {% if tot and tot != 0 %}
+                    Gs {{ tot | int | thousandsep }}
+                    {% else %}
+                    --
+                    {% endif %}
+                    {% if reserva.requiere_inspeccion %}<span style="font-size:0.7rem;display:block;font-weight:400;color:var(--warning);">(estimado)</span>{% endif %}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        {% set servicios_legacy = reserva.servicios.all() %}
+        {% if servicios_legacy %}
+        <div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+            {% for rs in servicios_legacy %}
+            <span class="servicio-item">{{ rs.servicio.nombre }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Fecha y Hora</h6>
+        <p>{{ reserva.fecha.strftime('%A %d de %B de %Y') | capitalize }}</p>
+        <p style="color:var(--text-muted);font-size:0.85rem;">{{ reserva.hora_inicio.strftime('%H:%M') }} hs
+        {% if reserva.hora_fin %} → {{ reserva.hora_fin.strftime('%H:%M') }} hs{% endif %}
+        {% if reserva.duracion_total_min %} · {{ reserva.duracion_total_min }} min{% endif %}
+        </p>
+        {% if reserva.fecha_fin and reserva.fecha_fin != reserva.fecha %}
+        <p style="color:var(--accent);font-size:0.85rem;font-weight:600;margin-top:0.35rem;">
+            Hasta: {{ reserva.fecha_fin.strftime('%A %d de %B de %Y') | capitalize }}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Estado</h6>
+        <span class="servicio-item">{{ reserva.estado.nombre }}</span>
+    </div>
+
+    {% if reserva.requiere_inspeccion %}
+    <div class="mensaje estimado">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        El precio es estimado y puede variar luego de la inspeccion visual del vehiculo. Te contactaremos para confirmar el precio final.
+    </div>
+    {% else %}
+    <div class="mensaje">
+        <i class="fa-regular fa-circle-check me-2" style="color:var(--accent);"></i>
+        Te contactaremos para confirmar tu turno. Si tenes alguna consulta, escribinos por WhatsApp.
+    </div>
+    {% endif %}
+
+    <a href="https://wa.me/595986802902?text=Hola%20Exclusive%20Auto%20Detail%2C%20tengo%20una%20consulta%20sobre%20mi%20reserva%20%23{{ reserva.id }}" target="_blank" rel="noopener" class="whatsapp-btn">
+        <i class="fa-brands fa-whatsapp fa-lg"></i> Consultar por WhatsApp
+    </a>
+
+    <div style="margin-top:1.5rem;">
+        <a href="{{ url_for('main.index') }}" style="text-decoration:none;display:inline-block;padding:0.85rem 2rem;background:var(--accent,#1a6bff);color:#fff;font-weight:700;border-radius:6px;font-size:0.95rem;">
+            <i class="fa-solid fa-house me-2"></i>Volver al inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

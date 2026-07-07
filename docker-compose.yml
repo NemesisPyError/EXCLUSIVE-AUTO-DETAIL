@@ -1,0 +1,60 @@
+# ================================================================
+# Exclusive Auto Detail — Docker Compose
+#
+# Producción: docker-compose up -d
+# Desarrollo: comentar redis y quitar redis de app.depends_on
+#
+# Requisitos previos:
+#   1. Crear .env desde .env.example y completar valores
+#   2. REDIS_URL=redis://redis:6379/0 (obligatorio en prod)
+#   3. Ejecutar seed: docker-compose exec app python seed.py
+# ================================================================
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secure_password}
+      MYSQL_DATABASE: ${DB_NAME:-exclusive_autodetail}
+      MYSQL_USER: ${DB_USER:-exclusive_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secure_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

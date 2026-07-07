@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+
+{% block title %}Exclusive Auto Detail — Detail de Excelencia en Hohenau{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     NAVBAR
+     ============================================================ -->
+<nav class="navbar navbar-expand-lg" id="mainNav">
+    <div class="container">
+        <a class="navbar-brand" href="#inicio"><span>EXCLUSIVE</span> AUTO DETAIL</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+                <li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="#servicios">Servicios</a></li>
+                <li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li>
+                <li class="nav-item"><a class="nav-link" href="#galeria">Galería</a></li>
+                <li class="nav-item"><a class="nav-link" href="#testimonios">Testimonios</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
+                <li class="nav-item">
+                    <a class="nav-link btn-nav" href="{{ url_for('reservas.nueva') }}">Reservar Turno</a>
+                </li>
+                {% if current_user.is_authenticated %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Salir</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero" id="inicio">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
+        <h1><span>Exclusive</span> Auto Detail</h1>
+        <p class="slogan">Calidad, Precisión y Compromiso con tu Vehículo</p>
+        <p class="subtitle">Todos los servicios se realizan con reserva previa</p>
+        <div class="btn-group">
+            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary-custom">Reservar Turno</a>
+            <a href="#servicios" class="btn-outline-custom">Ver Servicios</a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     RETIRO Y ENTREGA A DOMICILIO
+     ========================================================= -->
+<section class="retiro-entrega py-5" id="retiro-entrega">
+    <div class="container py-5">
+        <div class="retiro-header" data-aos="fade-scale" data-aos-duration="800">
+            <span class="badge-service mb-2">Servicio a domicilio</span>
+            <h2 class="section-title">Retiramos y Entregamos tu Vehículo a Domicilio</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle retiro-subtitle">
+                Pensando en tu comodidad, nos encargamos de recoger tu vehículo en la ubicación que nos indiques
+                y devolverlo una vez finalizado el servicio. Un proceso seguro, puntual y diseñado para que no
+                tengas que preocuparte por nada.
+            </p>
+        </div>
+
+        <div class="retiro-proceso">
+            <div class="retiro-step" data-aos="fade-scale" data-aos-duration="700" data-aos-delay="100">
+                <div class="retiro-icon">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <div class="retiro-text">
+                    <span class="retiro-num">01</span>
+                    <h3>Recogemos</h3>
+                    <p>Coordinamos la recogida en la ubicación que nos indiques, con puntualidad y el mayor cuidado por tu vehículo.</p>
+                </div>
+            </div>
+
+            <div class="retiro-line" data-aos="fade-scale" data-aos-duration="600" data-aos-delay="250" aria-hidden="true">
+                <span class="retiro-line-track"></span>
+                <span class="retiro-line-dot"></span>
+            </div>
+
+            <div class="retiro-step" data-aos="fade-scale" data-aos-duration="700" data-aos-delay="350">
+                <div class="retiro-icon">
+                    <i class="fa-solid fa-spray-can-sparkles"></i>
+                </div>
+                <div class="retiro-text">
+                    <span class="retiro-num">02</span>
+                    <h3>Detallamos</h3>
+                    <p>Realizamos el servicio de estética con productos profesionales y técnica de precisión en cada detalle.</p>
+                </div>
+            </div>
+
+            <div class="retiro-line" data-aos="fade-scale" data-aos-duration="600" data-aos-delay="450" aria-hidden="true">
+                <span class="retiro-line-track"></span>
+                <span class="retiro-line-dot"></span>
+            </div>
+
+            <div class="retiro-step" data-aos="fade-scale" data-aos-duration="700" data-aos-delay="550">
+                <div class="retiro-icon">
+                    <i class="fa-solid fa-handshake"></i>
+                </div>
+                <div class="retiro-text">
+                    <span class="retiro-num">03</span>
+                    <h3>Entregamos</h3>
+                    <p>Devolvemos tu vehículo impecable en el lugar acordado, listo para que lo disfrutes sin moverte de casa.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="retiro-cta" data-aos="fade-up" data-aos-duration="700" data-aos-delay="700">
+            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary-custom">
+                <i class="fa-solid fa-calendar-check me-2"></i> Coordinar retiro y entrega
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SOBRE NOSOTROS
+     ========================================================= -->
+<section class="sobre-nosotros py-5" id="nosotros">
+    <div class="container py-5">
+        <div class="row align-items-center g-4 g-lg-5">
+            <div class="col-lg-6" data-aos="fade-right" data-aos-duration="800">
+                <img src="{{ url_for('static', filename='img/placeholder-sobre.webp') }}"
+                     alt="Exclusive Auto Detail Taller"
+                     onerror="this.style.display='none';this.parentElement.style.background='#1a1a1a';this.parentElement.style.borderRadius='12px';this.parentElement.style.minHeight='400px';">
+            </div>
+            <div class="col-lg-6" data-aos="fade-left" data-aos-duration="800">
+                <span class="badge-service mb-2">Reserva previa garantizada</span>
+                <h2 class="section-title text-start mb-3">Pasión por el Detalle</h2>
+                <div class="section-divider" style="margin:0 0 1.5rem 0;"></div>
+                <p style="color:#e8e8e8;line-height:1.7;">
+                    Exclusive Auto Detail nace en <strong>Hohenau, Paraguay</strong>, con la misión de
+                    ofrecer un servicio de estética automotriz de primer nivel. Cada vehículo que
+                    recibimos es tratado con la dedicación y precisión que merece, utilizando
+                    productos profesionales y técnicas avanzadas.
+                </p>
+                <p style="color:#e8e8e8;line-height:1.7;">
+                    Creemos en la reserva previa como garantía de calidad: cada turno es agendado
+                    para dedicar el tiempo necesario a cada detalle, sin apuros ni sorpresas.
+                </p>
+                <div class="sobre-iconos">
+                    <div class="sobre-icono">
+                        <i class="fa-solid fa-car"></i>
+                        <span>Estética automotriz</span>
+                    </div>
+                    <div class="sobre-icono">
+                        <i class="fa-solid fa-soap"></i>
+                        <span>Lavados premium</span>
+                    </div>
+                    <div class="sobre-icono">
+                        <i class="fa-solid fa-gem"></i>
+                        <span>Nano cerámico</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SERVICIOS
+     ============================================================ -->
+<section class="py-5" id="servicios">
+    <div class="container py-5">
+        <div data-aos="fade-up" data-aos-duration="600">
+            <h2 class="section-title">Nuestros Servicios</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">Soluciones completas para el cuidado de tu vehículo</p>
+        </div>
+
+        <!-- Filtro -->
+        <div class="text-center mb-4" data-aos="fade-up" data-aos-duration="600">
+            <button class="filter-btn active" data-filter="todos">Todos</button>
+            <button class="filter-btn" data-filter="lavado_vehiculo">Vehículos</button>
+            <button class="filter-btn" data-filter="lavado_moto">Motos</button>
+            <button class="filter-btn" data-filter="tratamiento_pintura">Tratamientos</button>
+        </div>
+
+        <div class="row g-4">
+            <!-- Lavado Express -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="lavado_vehiculo" data-aos="fade-up" data-aos-duration="600">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-lavado-express.jpg') }}"
+                         class="card-img-top" alt="Lavado Express"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-water"></i>
+                        <h5>Lavado Express</h5>
+                        <p>Lavado exterior rápido con shampoo neutro, secado y neblinado de neumáticos.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 20 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=1) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lavado Detallado -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="lavado_vehiculo" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-lavado-detallado.jpg') }}"
+                         class="card-img-top" alt="Lavado Detallado"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-spray-can-sparkles"></i>
+                        <h5>Lavado Detallado</h5>
+                        <p>Lavado exterior e interior completo, aspirado profundo, lavado de tapizados y plásticos.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 60 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=2) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Limpieza Integral -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="lavado_vehiculo" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-limpieza-integral.jpg') }}"
+                         class="card-img-top" alt="Limpieza Integral"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-broom"></i>
+                        <h5>Limpieza Integral</h5>
+                        <p>Lavado Detallado + limpieza de motor, desinfección interna y tratamiento de cueros.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 120 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=3) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pulido Comercial -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="tratamiento_pintura" data-aos="fade-up" data-aos-duration="600">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-pulido-comercial.jpg') }}"
+                         class="card-img-top" alt="Pulido Comercial"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-rotate"></i>
+                        <h5>Pulido Comercial</h5>
+                        <p>Pulido mecánico de una etapa, abrillantado y encerado con sellante de alta duración.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 180 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=4) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pulido Técnico -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="tratamiento_pintura" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-pulido-tecnico.jpg') }}"
+                         class="card-img-top" alt="Pulido Técnico"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-compact-disc"></i>
+                        <h5>Pulido Técnico</h5>
+                        <p>Pulido de dos etapas con corrección de pintura, lustre final y recubrimiento sellador.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 300 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=5) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revestimiento Cerámico -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="tratamiento_pintura" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-ceramico.jpg') }}"
+                         class="card-img-top" alt="Revestimiento Cerámico"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-gem"></i>
+                        <h5>Revestimiento Cerámico</h5>
+                        <p>Aplicación de recubrimiento cerámico 9H de dureza, protección contra rayos UV y químicos.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 480 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=6) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remoción de Lluvia Ácida -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="tratamiento_pintura" data-aos="fade-up" data-aos-duration="600">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-lluvia-acida.jpg') }}"
+                         class="card-img-top" alt="Remoción Lluvia Ácida"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-droplet"></i>
+                        <h5>Remoción de Lluvia Ácida</h5>
+                        <p>Tratamiento químico-mecánico para eliminar manchas de lluvia ácida de pintura y cristales.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 120 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=7) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lavado Express de Motos -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="lavado_moto" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-moto-express.jpg') }}"
+                         class="card-img-top" alt="Lavado Express Motos"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        <h5>Lavado Express de Motos</h5>
+                        <p>Lavado exterior rápido, cadena y lubricación básica para tu moto.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 20 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=8) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lavado Detallado de Motos -->
+            <div class="col-6 col-lg-4 service-item" data-categoria="lavado_moto" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <div class="service-card">
+                    <img src="{{ url_for('static', filename='img/servicio-moto-detallado.jpg') }}"
+                         class="card-img-top" alt="Lavado Detallado Motos"
+                         onerror="this.style.display='none'">
+                    <div class="card-body">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        <h5>Lavado Detallado de Motos</h5>
+                        <p>Lavado completo, pulido de carenados, tratamiento de cromados y acondicionamiento de cadena.</p>
+                        <div class="tiempo"><i class="fa-regular fa-clock"></i> 60 min</div>
+                        <a href="{{ url_for('reservas.nueva', servicio=9) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     GALERÍA
+     ========================================================= -->
+<section class="py-5" id="galeria" style="background-color:var(--bg-secondary);">
+    <div class="container py-5">
+        <div data-aos="fade-up" data-aos-duration="600">
+            <h2 class="section-title">Galería</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">Resultados que hablan por sí solos</p>
+        </div>
+        <div class="row g-3">
+            {% for cat in galeria_categorias %}
+            {% set imgs = cat.imagenes %}
+            {% set multi = imgs|length > 1 %}
+            <div class="col-6 col-lg-4" data-aos="zoom-in" data-aos-duration="600" data-aos-delay="{{ (loop.index0 % 3) * 100 }}">
+                <div class="galeria-item" data-categoria="{{ cat.tipo }}" role="button" tabindex="0"
+                     aria-label="Ver imágenes de {{ cat.tipo }}">
+                    <img src="{{ imgs[0].url_thumb or imgs[0].url_imagen }}"
+                         alt="{{ imgs[0].titulo or cat.tipo }}"
+                         loading="lazy"
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22400%22><rect fill=%22%23222%22 width=%22600%22 height=%22400%22/><text fill=%22%23555%22 font-size=%2220%22 x=%22180%22 y=%22210%22>{{ cat.tipo }}</text></svg>'">
+                    <div class="galeria-overlay">
+                        <span>{{ cat.tipo }}</span>
+                        {% if multi %}
+                        <small class="galeria-count"><i class="fa-regular fa-images"></i> {{ imgs|length }} fotos</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12" style="text-align:center;color:var(--text-muted);padding:3rem 0;">
+                <i class="fa-regular fa-image" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
+                Próximamente más resultados en nuestra galería.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     CARRUSEL / LIGHTBOX DE GALERÍA
+     ========================================================= -->
+<div class="modal fade" id="carruselModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen carrusel-dialog">
+        <div class="modal-content carrusel-content">
+            <button type="button" class="carrusel-close" data-bs-dismiss="modal" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <button type="button" class="carrusel-arrow carrusel-prev" aria-label="Anterior">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="carrusel-viewport">
+                <div class="carrusel-track"></div>
+            </div>
+            <button type="button" class="carrusel-arrow carrusel-next" aria-label="Siguiente">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="carrusel-indicators"></div>
+            <div class="carrusel-caption"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     BENEFICIOS
+     ============================================================ -->
+<section class="beneficios py-5">
+    <div class="container py-5">
+        <div data-aos="fade-up" data-aos-duration="600">
+            <h2 class="section-title">¿Por qué Elegirnos?</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">Calidad que se nota en cada detalle</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600">
+                <div class="beneficio-card">
+                    <div class="icon-circle"><i class="fa-regular fa-calendar-check"></i></div>
+                    <h5>Reserva Previa</h5>
+                    <p>Atención exclusiva con turno programado, sin esperas.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+                <div class="beneficio-card">
+                    <div class="icon-circle"><i class="fa-solid fa-flask"></i></div>
+                    <h5>Productos Profesionales</h5>
+                    <p>Químicos y cerámicos de la más alta calidad del mercado.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <div class="beneficio-card">
+                    <div class="icon-circle"><i class="fa-solid fa-user-graduate"></i></div>
+                    <h5>Personal Capacitado</h5>
+                    <p>Técnicos especializados en detailing profesional.</p>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
+                <div class="beneficio-card">
+                    <div class="icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h5>Resultados Duraderos</h5>
+                    <p>Protección de larga duración con garantía de satisfacción.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     TESTIMONIOS
+     ============================================================ -->
+<section class="py-5" id="testimonios" style="background-color:var(--bg-secondary);">
+    <div class="container py-5">
+        <div data-aos="fade-up" data-aos-duration="600">
+            <h2 class="section-title">Lo que Dicen Nuestros Clientes</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">Opiniones reales de clientes satisfechos</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-6 col-lg-4" data-aos="fade-up" data-aos-duration="600">
+                <div class="testimonio-card">
+                    <div class="quote-icon"><i class="fa-solid fa-quote-left"></i></div>
+                    <p>Excelente servicio. Dejé mi auto para un lavado detallado y quedó impecable. Muy recomendados.</p>
+                    <div class="stars">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="cliente-nombre">Carlos Mendoza</div>
+                    <div class="cliente-vehiculo">Toyota Hilux</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+                <div class="testimonio-card">
+                    <div class="quote-icon"><i class="fa-solid fa-quote-left"></i></div>
+                    <p>Hice el revestimiento cerámico a mi SUV. La diferencia es increíble, el brillo y la protección son de primer nivel.</p>
+                    <div class="stars">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="cliente-nombre">María González</div>
+                    <div class="cliente-vehiculo">Chevrolet Tracker</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <div class="testimonio-card">
+                    <div class="quote-icon"><i class="fa-solid fa-quote-left"></i></div>
+                    <p>Por fin un lugar donde tratan las motos con el mismo nivel de detalle que los autos. Mi moto quedó como nueva.</p>
+                    <div class="stars">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="cliente-nombre">Luis Ramírez</div>
+                    <div class="cliente-vehiculo">Honda XR 190</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     CONTACTO / REDES SOCIALES
+     ============================================================ -->
+<section class="py-5" id="contacto">
+    <div class="container py-5">
+        <div data-aos="fade-up" data-aos-duration="600">
+            <h2 class="section-title">Contacto</h2>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">Seguinos en redes o escribinos por WhatsApp</p>
+        </div>
+
+        <div class="text-center mb-5" data-aos="fade-up" data-aos-duration="600">
+            <a href="https://www.instagram.com/exclusive_autodetail1/" target="_blank" rel="noopener" class="social-icon ig" aria-label="Instagram">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com" target="_blank" rel="noopener" class="social-icon fb" aria-label="Facebook">
+                <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="https://www.tiktok.com" target="_blank" rel="noopener" class="social-icon tiktok" aria-label="TikTok">
+                <i class="fa-brands fa-tiktok"></i>
+            </a>
+            <a href="https://wa.me/595986802902" target="_blank" rel="noopener" class="social-icon ws" aria-label="WhatsApp">
+                <i class="fa-brands fa-whatsapp"></i>
+            </a>
+        </div>
+
+        <div class="row g-4 align-items-stretch" data-aos="fade-up" data-aos-duration="800">
+            <div class="col-lg-6">
+                <div class="maps-container">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14401.843768313329!2d-55.641359!3d-27.075384!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjfCsDA0JzMxLjQiUyA1NcKwzOCcyOS4wIlc!5e0!3m2!1ses!2spy!4v1"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        title="Ubicación Exclusive Auto Detail Hohenau">
+                    </iframe>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="contacto-info h-100">
+                    <p><i class="fa-regular fa-building me-2"></i> <strong>Exclusive Auto Detail</strong></p>
+                    <p><i class="fa-regular fa-location-dot me-2"></i> Hohenau, Itapúa, Paraguay</p>
+                    <p><i class="fa-regular fa-clock me-2"></i> <strong>Horarios:</strong></p>
+                    <p style="padding-left:2rem;">Lunes a sábado: 07:00 a 17:00</p>
+                    <p style="padding-left:2rem;">Domingos: Cerrado</p>
+                    <p><i class="fa-brands fa-whatsapp me-2"></i> <strong>WhatsApp:</strong>
+                        <a href="https://wa.me/595986802902" target="_blank" rel="noopener" style="color:var(--accent);">+595 986 802 902</a>
+                    </p>
+                    <p><i class="fa-regular fa-envelope me-2"></i> <strong>Email:</strong>
+                        <a href="mailto:info@exclusiveautodetail.com" style="color:var(--accent);">info@exclusiveautodetail.com</a>
+                    </p>
+                    <p class="mt-3 mb-0"><i class="fa-regular fa-circle-check me-2" style="color:var(--accent);"></i>
+                    Todos los servicios se realizan con <strong>reserva previa</strong>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="footer-brand"><span>EXCLUSIVE</span> AUTO DETAIL</div>
+                <p class="mt-2">Detail de excelencia en Hohenau, Paraguay. Todos los servicios con reserva previa.</p>
+                <p>
+                    <a href="https://www.instagram.com/exclusive_autodetail1/" target="_blank" rel="noopener" class="me-3">
+                        <i class="fa-brands fa-instagram"></i> @exclusive_autodetail1
+                    </a>
+                </p>
+                <p>
+                    <a href="https://wa.me/595986802902" target="_blank" rel="noopener">
+                        <i class="fa-brands fa-whatsapp"></i> +595 986 802 902
+                    </a>
+                </p>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <h6>Horarios de Atención</h6>
+                <p>Lunes a sábado: 07:00 a 17:00</p>
+                <p>Domingos: Cerrado</p>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <h6>Servicios</h6>
+                <p><a href="#servicios">Lavado Express</a></p>
+                <p><a href="#servicios">Lavado Detallado</a></p>
+                <p><a href="#servicios">Pulido Profesional</a></p>
+                <p><a href="#servicios">Revestimiento Cerámico</a></p>
+            </div>
+        </div>
+        <hr class="footer-divider">
+        <div class="footer-bottom">
+            &copy; <span class="footer-year">2025</span> Exclusive Auto Detail — Hohenau, Paraguay.
+            Todos los derechos reservados.
+        </div>
+    </div>
+</footer>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const GALERIA_DATA = {{ galeria_json|safe }};
+
+(function () {
+    const modalEl = document.getElementById('carruselModal');
+    if (!modalEl) return;
+    const track = modalEl.querySelector('.carrusel-track');
+    const indicatorsBox = modalEl.querySelector('.carrusel-indicators');
+    const captionBox = modalEl.querySelector('.carrusel-caption');
+    const prevBtn = modalEl.querySelector('.carrusel-prev');
+    const nextBtn = modalEl.querySelector('.carrusel-next');
+    let slides = [];
+    let current = 0;
+    let total = 0;
+
+    function buildSlides(categoria) {
+        const data = GALERIA_DATA[categoria] || [];
+        track.innerHTML = '';
+        indicatorsBox.innerHTML = '';
+        slides = [];
+        total = data.length;
+
+        data.forEach(function (item, i) {
+            const slide = document.createElement('div');
+            slide.className = 'carrusel-slide';
+            const img = document.createElement('img');
+            img.src = item.url;
+            img.alt = item.titulo || categoria;
+            img.loading = 'lazy';
+            img.onerror = function () {
+                this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22800%22><rect fill=%22%23222%22 width=%221200%22 height=%22800%22/></svg>';
+            };
+            slide.appendChild(img);
+            track.appendChild(slide);
+            slides.push(slide);
+
+            if (total > 1) {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = 'carrusel-dot';
+                dot.setAttribute('aria-label', 'Ir a imagen ' + (i + 1));
+                dot.addEventListener('click', function () { goTo(i); });
+                indicatorsBox.appendChild(dot);
+            }
+        });
+
+        const single = total <= 1;
+        prevBtn.style.display = single ? 'none' : '';
+        nextBtn.style.display = single ? 'none' : '';
+        indicatorsBox.style.display = single ? 'none' : '';
+
+        current = 0;
+        goTo(0);
+    }
+
+    function goTo(index) {
+        if (total === 0) return;
+        current = (index + total) % total;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        slides.forEach(function (s, i) {
+            s.classList.toggle('active', i === current);
+        });
+        const dots = indicatorsBox.querySelectorAll('.carrusel-dot');
+        dots.forEach(function (d, i) {
+            d.classList.toggle('active', i === current);
+        });
+        const data = (GALERIA_DATA[modalEl.dataset.categoria] || []);
+        const item = data[current];
+        if (item) {
+            captionBox.textContent = item.titulo ? item.titulo + (item.descripcion ? ' — ' + item.descripcion : '') : (item.descripcion || '');
+            captionBox.style.display = (captionBox.textContent) ? '' : 'none';
+        }
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    document.addEventListener('keydown', function (e) {
+        if (!modalEl.classList.contains('show')) return;
+        if (e.key === 'ArrowLeft') prev();
+        if (e.key === 'ArrowRight') next();
+        if (e.key === 'Escape') bootstrap.Modal.getInstance(modalEl)?.hide();
+    });
+
+    // Swipe support para móviles
+    let touchStartX = 0;
+    let touchEndX = 0;
+    track.addEventListener('touchstart', function (e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    track.addEventListener('touchend', function (e) {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) next(); else prev();
+        }
+    }, { passive: true });
+
+    // Abrir carrusel al hacer clic en una tarjeta
+    document.querySelectorAll('.galeria-item[data-categoria]').forEach(function (card) {
+        const open = function () {
+            const categoria = card.dataset.categoria;
+            modalEl.dataset.categoria = categoria;
+            buildSlides(categoria);
+            const bm = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bm.show();
+        };
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+        });
+    });
+})();
+</script>
+{% endblock %}
