@@ -108,10 +108,16 @@ with app.app_context():
         'Antes y Despues', 'Resultado Pulido', 'Revestimiento Ceramico',
         'Detalle Interior', 'Lavado Profundo', 'Brillo Final',
     ]
+    # WebP images mas utilizadas como placeholder (ya existen en static/img/galeria/)
+    _webp_placeholders = [
+        '/static/img/galeria/galeria_8fff38584b.webp',
+        '/static/img/galeria/galeria_169b69de2a.webp',
+        '/static/img/galeria/galeria_412ee87fc8.webp',
+    ]
     for orden, cat in enumerate(galeria_cats, start=1):
         db.session.add(Galeria(
             titulo=cat, descripcion=None,
-            url_imagen=f'/static/img/placeholder-galeria-{orden}.jpg',
+            url_imagen=_webp_placeholders[(orden - 1) % len(_webp_placeholders)],
             tipo=cat, activo=True, orden=orden
         ))
 
