@@ -41,6 +41,64 @@ class PlanificadorOcupacion:
     PASO_SLOT = 30
 
     # ------------------------------------------------------------------
+    # Metodos de planificacion
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def clasificar_servicio(duracion_min):
+        if duracion_min <= 60:
+            return 'rapido'
+        elif duracion_min <= 180:
+            return 'normal'
+        return 'detallado'
+
+    @staticmethod
+    def calcular_entrega(fecha_inicio, hora_inicio, duracion_min):
+        """Calcula la fecha y hora estimada de entrega considerando
+        los horarios laborales. Para servicios que exceden el cierre,
+        calcula el siguiente dia habil."""
+        from models.horario import Horario
+
+        restante = duracion_min
+        fecha = fecha_inicio
+        cursor = datetime.combine(fecha, hora_inicio)
+        max_dias = 30
+
+        for _ in range(max_dias):
+            dia = fecha.weekday() + 1
+            horario = Horario.query.filter_by(dia_semana=dia, activo=True).first()
+
+            if not horario:
+                fecha += timedelta(days=1)
+                cursor = datetime.combine(fecha, time(7, 0))
+                continue
+
+            cierre_dt = datetime.combine(fecha, horario.hora_fin)
+            if cursor < datetime.combine(fecha, horario.hora_inicio):
+                cursor = datetime.combine(fecha, horario.hora_inicio)
+
+            disponibles = int((cierre_dt - cursor).total_seconds() / 60)
+            if disponibles <= 0:
+                fecha += timedelta(days=1)
+                cursor = datetime.combine(fecha, horario.hora_inicio)
+                continue
+
+            if disponibles >= restante:
+                entrega = cursor + timedelta(minutes=restante)
+                return entrega.date(), entrega.time(), None
+
+            restante -= disponibles
+            fecha += timedelta(days=1)
+            dia_next = fecha.weekday() + 1
+            horario_next = Horario.query.filter_by(dia_semana=dia_next, activo=True).first()
+            if horario_next:
+                cursor = datetime.combine(fecha, horario_next.hora_inicio)
+            else:
+                cursor = datetime.combine(fecha, time(7, 0))
+
+        return None, None, 'No se pudo calcular la entrega estimada.'
+
+    # ------------------------------------------------------------------
     # Metodos existentes (sin cambios)
     # ------------------------------------------------------------------
 
@@ -88,12 +146,23 @@ class PlanificadorOcupacion:
         if not horario:
             return False, 'El taller no opera este dia.'
 
+        # Para servicios rapidos/normales: no deben exceder el cierre
+        clase = cls.clasificar_servicio(duracion_min)
         hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=duracion_min)).time()
+        if clase != 'detallado' and hora_fin > horario.hora_fin:
+            return False, 'El servicio excede el horario de cierre del taller.'
 
         if hora_inicio < horario.hora_inicio:
             return False, 'La hora de inicio esta fuera del horario de atencion.'
-        if hora_fin > horario.hora_fin:
-            return False, 'El servicio excede el horario de cierre del taller.'
+
+        # Para servicios detallados: verificar solo hasta el cierre del primer dia
+        minutos_a_verificar = duracion_min
+        cierre_dt = datetime.combine(fecha, horario.hora_fin)
+        inicio_dt = datetime.combine(fecha, hora_inicio)
+        if clase == 'detallado':
+            minutos_hasta_cierre = int((cierre_dt - inicio_dt).total_seconds() / 60)
+            if minutos_hasta_cierre > 0:
+                minutos_a_verificar = min(duracion_min, minutos_hasta_cierre)
 
         intervalos = cls.intervalos_del_dia(fecha, for_update=lock_rows)
         capacidad = horario.capacidad_maxima
@@ -101,11 +170,10 @@ class PlanificadorOcupacion:
         if not intervalos:
             return True, None
 
-        inicio_dt = datetime.combine(fecha, hora_inicio)
-
-        # Chequeo de concurrencia minuto a minuto (no saltos de 30 min)
-        for minuto in range(0, duracion_min + 1):
+        for minuto in range(0, minutos_a_verificar + 1):
             t_check = (inicio_dt + timedelta(minutes=minuto)).time()
+            if t_check > horario.hora_fin:
+                break
             concurrentes = sum(
                 1 for ini, fin in intervalos
                 if ini <= t_check < fin
@@ -155,31 +223,51 @@ class PlanificadorOcupacion:
         if not horario:
             return []
 
+        clase = cls.clasificar_servicio(duracion_min)
         resultado = []
         paso = cls.PASO_SLOT
         cursor = datetime.combine(fecha, horario.hora_inicio)
 
         while True:
             hora_actual = cursor.time()
+            if hora_actual < horario.hora_inicio:
+                cursor += timedelta(minutes=paso)
+                continue
+
             hora_fin_simulada = (cursor + timedelta(minutes=duracion_min)).time()
 
-            if hora_fin_simulada > horario.hora_fin:
+            # Servicios rapidos/normales deben caber en el horario
+            if clase != 'detallado' and hora_fin_simulada > horario.hora_fin:
+                break
+
+            # Ya no hay mas slots validos
+            if cursor.time() >= horario.hora_fin:
                 break
 
             cap = cls.capacidad_minima_durante_intervalo(fecha, hora_actual, duracion_min)
             disponible = cap > 0
 
+            if clase == 'detallado':
+                fe, he, _ = cls.calcular_entrega(fecha, hora_actual, duracion_min)
+                entrega = fe.strftime('%d/%m') + ' ' + he.strftime('%H:%M') if fe and he else None
+            else:
+                entrega = cls._formatear_hora(hora_fin_simulada)
+
             resultado.append({
                 'hora': hora_actual.strftime('%H:%M'),
                 'disponible': disponible,
                 'lugares': cap,
+                'entrega': entrega,
+                'clase': clase,
             })
 
             cursor += timedelta(minutes=paso)
-            if cursor.time() > horario.hora_fin:
-                break
 
         return resultado
+
+    @staticmethod
+    def _formatear_hora(t):
+        return t.strftime('%H:%M') if t else None
 
     # ------------------------------------------------------------------
     # NUEVO: Soporte multi-dia (Integral)

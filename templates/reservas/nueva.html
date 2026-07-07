@@ -280,27 +280,23 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
         <!-- STEP 5: Fecha y Horario + Resumen -->
         <div class="step-content" data-step="5">
-            <div class="step-indicator"><span>PASO 5 — Fecha y Horario</span></div>
+            <div class="step-indicator"><span>PASO 5 — Fecha y Hora de Ingreso</span></div>
 
             <div class="row g-4">
                 <div class="col-md-6">
-                    <label class="form-label">Selecciona una fecha *</label>
+                    <label class="form-label">Fecha de ingreso *</label>
                     <input type="date" class="form-control" id="fecha-input" name="fecha">
                     <div class="invalid-feedback" id="fechaError">Selecciona una fecha valida (hoy o futura).</div>
-                    <div id="fechaFinWrap" style="display:none;margin-top:0.75rem;">
-                        <label class="form-label">Fecha de finalizacion</label>
-                        <div class="multi-dia-display" id="fechaFinDisplay">--</div>
-                        <input type="hidden" id="fecha_fin" name="fecha_fin">
-                        <input type="hidden" id="dias_bloqueo" name="dias_bloqueo">
-                    </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Horarios disponibles</label>
+                    <label class="form-label">Hora de ingreso</label>
                     <div id="horariosContainer">
                         <p style="color:var(--text-muted);font-size:0.85rem;">Selecciona una fecha para ver horarios.</p>
                     </div>
                     <input type="hidden" id="hora" name="hora">
-                    <div class="invalid-feedback" id="horaError" style="display:none;">Selecciona un horario.</div>
+                    <input type="hidden" id="fecha_fin" name="fecha_fin">
+                    <input type="hidden" id="dias_bloqueo" name="dias_bloqueo">
+                    <div class="invalid-feedback" id="horaError" style="display:none;">Selecciona un horario de ingreso.</div>
                 </div>
             </div>
 
@@ -332,10 +328,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
                 </div>
                 <div class="col-md-6">
                     <div class="resumen-card">
-                        <h6>Fecha y Hora</h6>
-                        <p id="resumen-fecha">--</p>
-                        <p id="resumen-hora" style="color:var(--text-muted);font-size:0.85rem;">--</p>
-                        <p id="resumen-fin" style="color:var(--accent);font-size:0.8rem;font-weight:600;margin-top:0.35rem;display:none;"></p>
+                        <h6>Agenda</h6>
+                        <p id="resumen-ingreso"><strong style="color:var(--text-light);">Ingreso:</strong> <span id="resumen-fecha">--</span> · <span id="resumen-hora">--</span></p>
+                        <p id="resumen-duracion" style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem;"></p>
+                        <p id="resumen-entrega" style="color:var(--accent);font-size:0.85rem;font-weight:600;margin-top:0.25rem;"></p>
                     </div>
                 </div>
             </div>
@@ -1030,7 +1026,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
     function cargarHorarios(fecha) {
         var container = document.getElementById('horariosContainer');
         var dur = (pricingResult && pricingResult.tiempo_estimado_min) ? pricingResult.tiempo_estimado_min : 60;
-        container.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Buscando horarios...</div>';
+        container.innerHTML = '<div class="horario-loading"><i class="fa-solid fa-spinner fa-spin"></i>Buscando horarios de ingreso...</div>';
 
         fetch('/horarios-disponibles?fecha=' + fecha + '&duracion_min=' + dur)
             .then(function(r) { return r.json(); })
@@ -1043,8 +1039,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
                 data.horarios.forEach(function(h) {
                     var cls = h.disponible ? 'horario-btn' : 'horario-btn disabled';
                     var txt = h.disponible ? h.hora : h.hora + ' <span class="lugares">Completo</span>';
+                    var extra = '';
+                    if (h.entrega && h.clase === 'detallado') {
+                        extra = '<span class="lugares" style="font-size:0.6rem;color:var(--accent);">Entrega ~' + h.entrega + '</span>';
+                    }
                     var lugares = h.disponible ? '<span class="lugares">' + h.lugares + ' lugar(es)</span>' : '';
-                    html += '<div class="' + cls + '" data-hora="' + h.hora + '" data-disponible="' + h.disponible + '">' + txt + lugares + '</div>';
+                    html += '<div class="' + cls + '" data-hora="' + h.hora + '" data-disponible="' + h.disponible + '">' + txt + lugares + extra + '</div>';
                 });
                 html += '</div>';
                 container.innerHTML = html;
@@ -1058,41 +1058,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
                         updateResumen();
                     });
                 });
-
-                updateMultiDiaInfo(fecha, dur);
             })
             .catch(function() {
                 container.innerHTML = '<p style="color:var(--danger);">Error al cargar horarios.</p>';
             });
-    }
-
-    function updateMultiDiaInfo(fecha, dur) {
-        var wrap = document.getElementById('fechaFinWrap');
-        var esIntegral = selectedCategoria && selectedCategoria.permite_multidias;
-        if (!esIntegral || !pricingResult) {
-            wrap.style.display = 'none';
-            return;
-        }
-        wrap.style.display = '';
-        var dias = pricingResult.dias_bloqueo || 1;
-
-        fetch('/api/publica/disponibilidad-multidia?fecha=' + fecha + '&dias=' + dias + '&duracion_min=' + dur)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d.success && d.resultado) {
-                    var res = d.resultado;
-                    if (res.bloqueos && res.bloqueos.length) {
-                        var ult = res.bloqueos[res.bloqueos.length - 1];
-                        document.getElementById('fechaFinDisplay').textContent = formatearFecha(ult.fecha);
-                        document.getElementById('fecha_fin').value = ult.fecha;
-                        document.getElementById('dias_bloqueo').value = dias;
-                    }
-                    if (!res.disponible && res.dias_problema.length) {
-                        document.getElementById('fechaFinDisplay').textContent += ' (ATENCION: conflictos en ' + res.dias_problema.join(', ') + ')';
-                    }
-                }
-            })
-            .catch(function() {});
     }
 
     // ==================== RESUMEN ====================
@@ -1147,13 +1116,28 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         document.getElementById('resumen-fecha').textContent = fecha ? formatearFecha(fecha) : '--';
         document.getElementById('resumen-hora').textContent = hora ? hora + ' hs' : '--';
 
-        var finEl = document.getElementById('resumen-fin');
+        // Duracion
+        document.getElementById('resumen-duracion').textContent = dur > 0 ? '<i class=\"fa-regular fa-clock me-1\"></i>Duracion estimada: ' + formatearDuracion(dur) : '';
+
+        // Entrega estimada
+        var entregaEl = document.getElementById('resumen-entrega');
         if (hora && dur > 0) {
-            var finHora = calcularHoraFin(hora, dur);
-            finEl.textContent = 'Finaliza aprox: ' + finHora + ' hs';
-            finEl.style.display = '';
+            var partesHora = hora.split(':');
+            var hhIn = parseInt(partesHora[0]), mmIn = parseInt(partesHora[1]);
+            var totalMin = hhIn * 60 + mmIn + dur;
+            var hhFin = Math.floor(totalMin / 60) % 24;
+            var mmFin = totalMin % 60;
+            var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+
+            if (dur > 180) {
+                var horasDia = 8;
+                var diasHabiles = Math.ceil(dur / (horasDia * 60));
+                entregaEl.innerHTML = '<i class="fa-solid fa-truck-fast me-1"></i>Entrega estimada: ~' + diasHabiles + ' dia(s) habil(es) · ' + pad(hhFin) + ':' + pad(mmFin) + ' hs';
+            } else {
+                entregaEl.innerHTML = '<i class="fa-solid fa-truck-fast me-1"></i>Entrega estimada: ' + pad(hhFin) + ':' + pad(mmFin) + ' hs (mismo dia)';
+            }
         } else {
-            finEl.style.display = 'none';
+            entregaEl.innerHTML = '';
         }
 
         var detalleItems = document.getElementById('resumenDetalleItems');

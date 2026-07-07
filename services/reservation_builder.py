@@ -16,7 +16,7 @@ from services.validaciones import (
     validar_fecha_futura,
     validar_disponibilidad_por_rango,
 )
-from services.duracion import CalculadorDuracion
+from services.duracion import CalculadorDuracion, PlanificadorOcupacion
 from services.pricing_service import PricingEngine
 from services.security_service import log_error
 from datetime import datetime
@@ -148,12 +148,20 @@ class ReservationBuilder:
 
             hora_fin = CalculadorDuracion.calcular_hora_fin(hora, duracion_total)
 
-            fecha_fin = None
-            if fecha_fin_str:
-                try:
-                    fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
-                except (ValueError, TypeError):
-                    fecha_fin = None
+            # Para servicios detallados (>3h) calcular entrega considerando
+            # varios dias habiles
+            fecha_entrega = fecha
+            hora_entrega = hora_fin
+            if PlanificadorOcupacion.clasificar_servicio(duracion_total) == 'detallado':
+                fe, he, _ = PlanificadorOcupacion.calcular_entrega(
+                    fecha, hora, duracion_total
+                )
+                if fe and he:
+                    fecha_entrega = fe
+                    hora_entrega = he
+                    fecha_fin = fe
+
+            fecha_fin = fecha_entrega if fecha_entrega != fecha else None
 
             cliente = Cliente(
                 nombre=nombre,
@@ -183,7 +191,7 @@ class ReservationBuilder:
                 fecha=fecha,
                 hora_inicio=hora,
                 duracion_total_min=duracion_total,
-                hora_fin=hora_fin,
+                hora_fin=hora_entrega,
                 fecha_fin=fecha_fin,
                 dias_bloqueo=precio_data.get('dias_bloqueo') or 0,
                 categoria_servicio_id=categoria.id,
