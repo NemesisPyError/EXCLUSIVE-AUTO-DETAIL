@@ -20,7 +20,7 @@
 }
 body { background: var(--bg-primary); color: var(--white); font-family: 'Montserrat', sans-serif; padding-top: 80px; }
 .wizard-container { max-width: 860px; margin: 0 auto; padding: 1rem 1rem 3rem; }
-.progress-steps { display: flex; justify-content: space-between; margin-bottom: 2.5rem; position: relative; }
+.progress-steps { display: flex; justify-content: space-between; margin-bottom: 2rem; position: relative; }
 .progress-steps::before { content: ''; position: absolute; top: 16px; left: 0; right: 0; height: 3px; background: var(--border-subtle); z-index: 0; }
 .progress-steps .step { position: relative; z-index: 1; text-align: center; flex: 1; }
 .progress-steps .step .circle { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); transition: 0.3s; }
@@ -28,8 +28,14 @@ body { background: var(--bg-primary); color: var(--white); font-family: 'Montser
 .progress-steps .step.done .circle { background: var(--success); border-color: var(--success); color: var(--white); }
 .progress-steps .step .label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .progress-steps .step.active .label { color: var(--accent); }
-.step-content { display: none; }
-.step-content.active { display: block; animation: fadeIn 0.35s ease; }
+
+.progress-bar-wrap { height: 4px; background: var(--border-subtle); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.35s ease; width: 0%; }
+.progress-info { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+
+.step-content { display: none; opacity: 0; transform: translateY(8px); transition: opacity 0.2s ease, transform 0.2s ease; }
+.step-content.active { display: block; opacity: 1; transform: translateY(0); }
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-light); margin-bottom: 0.35rem; }
 .form-control, .form-select { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--white); border-radius: 8px; padding: 0.65rem 1rem; font-size: 0.9rem; }
@@ -40,25 +46,50 @@ body { background: var(--bg-primary); color: var(--white); font-family: 'Montser
 .form-control.is-invalid ~ .invalid-feedback, .form-select.is-invalid ~ .invalid-feedback { display: block; }
 .wizard-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
 
-/* Step 2: Vehicle grid */
-.option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; }
-.option-card { cursor: pointer; padding: 1.25rem 0.75rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 10px; transition: 0.25s; }
-.option-card i { font-size: 1.6rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block; }
-.option-card span { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
-.option-card small { font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 0.15rem; }
-.option-card:hover { border-color: var(--accent); }
-.option-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); }
+/* Step 2: Vehicle grid — compact */
+.option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.6rem; }
+.option-card { cursor: pointer; padding: 1rem 0.6rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 10px; transition: 0.2s; position: relative; }
+.option-card i { font-size: 1.4rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block; transition: color 0.2s; }
+.option-card span { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; }
+.option-card small { font-size: 0.65rem; color: var(--text-muted); display: block; margin-top: 0.1rem; }
+.option-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,107,255,0.12); }
+.option-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,107,255,0.15); }
 .option-card.selected i, .option-card.selected span { color: var(--accent); }
+.option-card .check-mark { position: absolute; top: 6px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); display: none; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; }
+.option-card.selected .check-mark { display: flex; }
 
 /* Step 3: Category grid */
-.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
-.cat-card { cursor: pointer; padding: 1.5rem 1rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 12px; transition: 0.25s; }
-.cat-card i { font-size: 1.8rem; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
-.cat-card h6 { font-size: 0.85rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.25rem; }
-.cat-card small { font-size: 0.68rem; color: var(--text-muted); display: block; }
-.cat-card:hover { border-color: var(--accent); }
-.cat-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); }
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.cat-card { cursor: pointer; padding: 1.2rem 0.8rem; text-align: center; background: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: 10px; transition: 0.2s; }
+.cat-card i { font-size: 1.6rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block; transition: color 0.2s; }
+.cat-card h6 { font-size: 0.82rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.15rem; }
+.cat-card small { font-size: 0.65rem; color: var(--text-muted); display: block; }
+.cat-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,107,255,0.12); }
+.cat-card.selected { border-color: var(--accent); background: rgba(26,107,255,0.1); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,107,255,0.15); }
 .cat-card.selected i, .cat-card.selected h6 { color: var(--accent); }
+
+/* Dynamic summary panel */
+.dynamic-summary { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1rem; margin-top: 1.5rem; display: none; }
+.dynamic-summary.visible { display: block; animation: fadeIn 0.25s ease; }
+.dynamic-summary h5 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem; }
+.dynamic-summary .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; font-size: 0.82rem; }
+.dynamic-summary .summary-row .slabel { color: var(--text-muted); }
+.dynamic-summary .summary-row .svalue { color: var(--text-light); font-weight: 600; text-align: right; }
+.dynamic-summary .summary-section { padding: 0.4rem 0; }
+.dynamic-summary .summary-section h6 { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+
+/* Service detail card */
+.service-detail { background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.25rem; margin-top: 1rem; animation: fadeIn 0.25s ease; }
+.service-detail .svc-header { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+.service-detail .svc-includes { font-size: 0.78rem; color: var(--text-light); }
+.service-detail .svc-includes li { margin-bottom: 0.2rem; }
+.service-detail .svc-meta { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); font-size: 0.82rem; color: var(--text-muted); }
+.service-detail .svc-meta i { color: var(--accent); margin-right: 0.35rem; }
+.service-detail .svc-warning { margin-top: 0.75rem; padding: 0.65rem; background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.2); border-radius: 6px; font-size: 0.75rem; color: #f0c040; display: flex; align-items: flex-start; gap: 0.5rem; }
+
+/* Step 5: redesigned */
+.ingreso-section { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+.ingreso-section h6 { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; }
 
 /* Step 4 sub-options */
 .step-indicator { text-align: center; margin-bottom: 0.5rem; }
@@ -121,14 +152,22 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         </a>
     </div>
     <h2 class="text-center mb-1" style="font-weight:900;">Reservar Turno</h2>
-    <p class="text-center" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:2rem;">Completa los pasos para agendar tu servicio</p>
+    <p class="text-center" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">Completa los pasos para agendar tu servicio</p>
+
+    <div class="progress-info"><span>Paso <span id="stepLabel">1</span> de 5</span><span id="stepPercent">0%</span></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
 
     <div class="progress-steps" id="progressSteps">
         <div class="step active" data-step="1"><div class="circle">1</div><div class="label">Datos</div></div>
         <div class="step" data-step="2"><div class="circle">2</div><div class="label">Vehiculo</div></div>
         <div class="step" data-step="3"><div class="circle">3</div><div class="label">Servicio</div></div>
         <div class="step" data-step="4"><div class="circle">4</div><div class="label">Detalles</div></div>
-        <div class="step" data-step="5"><div class="circle">5</div><div class="label">Fecha</div></div>
+        <div class="step" data-step="5"><div class="circle">5</div><div class="label">Agendar</div></div>
+    </div>
+
+    <div class="dynamic-summary" id="dynamicSummary">
+        <h5><i class="fa-solid fa-clipboard-list me-2"></i>Resumen de tu reserva</h5>
+        <div id="dynamicSummaryContent"></div>
     </div>
 
     <div class="spinner-overlay" id="spinnerOverlay">
@@ -282,56 +321,23 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         <div class="step-content" data-step="5">
             <div class="step-indicator"><span>PASO 5 — Fecha y Hora de Ingreso</span></div>
 
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <label class="form-label">Fecha de ingreso *</label>
-                    <input type="date" class="form-control" id="fecha-input" name="fecha">
-                    <div class="invalid-feedback" id="fechaError">Selecciona una fecha valida (hoy o futura).</div>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Hora de ingreso</label>
-                    <div id="horariosContainer">
-                        <p style="color:var(--text-muted);font-size:0.85rem;">Selecciona una fecha para ver horarios.</p>
+            <div class="ingreso-section">
+                <h6><i class="fa-regular fa-calendar-check me-2"></i>Agenda tu turno</h6>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label">Fecha de ingreso *</label>
+                        <input type="date" class="form-control" id="fecha-input" name="fecha">
+                        <div class="invalid-feedback" id="fechaError">Selecciona una fecha valida (hoy o futura).</div>
                     </div>
-                    <input type="hidden" id="hora" name="hora">
-                    <input type="hidden" id="fecha_fin" name="fecha_fin">
-                    <input type="hidden" id="dias_bloqueo" name="dias_bloqueo">
-                    <div class="invalid-feedback" id="horaError" style="display:none;">Selecciona un horario de ingreso.</div>
-                </div>
-            </div>
-
-            <hr style="border-color:var(--border-subtle);margin:1.5rem 0;">
-
-            <h5 style="font-weight:700;margin-bottom:1rem;">Resumen de tu Reserva</h5>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="resumen-card">
-                        <h6>Cliente</h6>
-                        <p id="resumen-nombre">--</p>
-                        <p id="resumen-telefono" style="color:var(--text-muted);font-size:0.85rem;">--</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="resumen-card">
-                        <h6>Vehiculo</h6>
-                        <p id="resumen-vehiculo">--</p>
-                        <p id="resumen-color" style="color:var(--text-muted);font-size:0.85rem;">--</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="resumen-card">
-                        <h6>Servicio</h6>
-                        <p id="resumen-servicio">--</p>
-                        <div id="resumen-detalle" style="color:var(--text-muted);font-size:0.82rem;margin-top:0.25rem;"></div>
-                        <div id="resumen-nota" style="display:none;margin-top:0.5rem;padding:0.5rem;background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:6px;font-size:0.72rem;color:#f0c040;"></div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="resumen-card">
-                        <h6>Agenda</h6>
-                        <p id="resumen-ingreso"><strong style="color:var(--text-light);">Ingreso:</strong> <span id="resumen-fecha">--</span> · <span id="resumen-hora">--</span></p>
-                        <p id="resumen-duracion" style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem;"></p>
-                        <p id="resumen-entrega" style="color:var(--accent);font-size:0.85rem;font-weight:600;margin-top:0.25rem;"></p>
+                    <div class="col-sm-6">
+                        <label class="form-label">Hora de ingreso</label>
+                        <div id="horariosContainer">
+                            <p style="color:var(--text-muted);font-size:0.85rem;">Selecciona una fecha para ver horarios.</p>
+                        </div>
+                        <input type="hidden" id="hora" name="hora">
+                        <input type="hidden" id="fecha_fin" name="fecha_fin">
+                        <input type="hidden" id="dias_bloqueo" name="dias_bloqueo">
+                        <div class="invalid-feedback" id="horaError" style="display:none;">Selecciona un horario de ingreso.</div>
                     </div>
                 </div>
             </div>
@@ -346,6 +352,16 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
                     <span>TOTAL</span>
                     <span id="resumenTotalMonto">Gs 0</span>
                 </div>
+            </div>
+
+            <div class="ingreso-section" style="margin-top:0.75rem;">
+                <h6><i class="fa-solid fa-circle-info me-2"></i>Detalle del turno</h6>
+                <p style="font-size:0.85rem;margin:0;">
+                    <strong style="color:var(--text-light);">Ingreso:</strong>
+                    <span id="resumen-fecha">--</span> · <span id="resumen-hora">--</span>
+                </p>
+                <p id="resumen-duracion" style="color:var(--text-muted);font-size:0.82rem;margin:0.25rem 0 0 0;"></p>
+                <p id="resumen-entrega" style="color:var(--accent);font-size:0.82rem;font-weight:600;margin:0.25rem 0 0 0;"></p>
             </div>
 
             <div class="alert-custom mt-3"><i class="fa-regular fa-circle-check me-2"></i> Al confirmar, te contactaremos para coordinar el turno.</div>
@@ -455,6 +471,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         var html = '';
         vehiculosData.forEach(function(v) {
             html += '<div class="option-card" data-slug="' + escapeHtml(v.slug) + '" data-nombre="' + escapeHtml(v.nombre) + '" data-id="' + v.id + '">';
+            html += '<div class="check-mark"><i class="fa-solid fa-check"></i></div>';
             if (v.icono) html += '<i class="' + escapeHtml(v.icono) + '"></i>';
             html += '<span>' + escapeHtml(v.nombre) + '</span>';
             if (v.descripcion) html += '<small>' + escapeHtml(v.descripcion) + '</small>';
@@ -931,6 +948,20 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
         currentStep = step;
 
+        // Progress tracking
+        document.getElementById('stepLabel').textContent = step;
+        document.getElementById('stepPercent').textContent = Math.round((step / totalSteps) * 100) + '%';
+        document.getElementById('progressFill').style.width = ((step / totalSteps) * 100) + '%';
+
+        // Dynamic summary: show from step 2 onwards
+        var summary = document.getElementById('dynamicSummary');
+        if (step >= 2) {
+            summary.classList.add('visible');
+            updateDynamicSummary();
+        } else {
+            summary.classList.remove('visible');
+        }
+
         // Logica especifica del paso
         if (step === 4) buildStep4();
         if (step === 5) {
@@ -1080,6 +1111,86 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
             });
     }
 
+    // ==================== DYNAMIC SUMMARY ====================
+    function updateDynamicSummary() {
+        var el = document.getElementById('dynamicSummaryContent');
+        var html = '';
+
+        // Cliente
+        var nom = document.getElementById('nombre').value.trim();
+        var ape = document.getElementById('apellido').value.trim();
+        if (nom || ape) {
+            html += '<div class="summary-section"><h6>Cliente</h6>';
+            html += '<div class="summary-row"><span class="slabel">' + (nom || '--') + ' ' + (ape || '') + '</span></div>';
+            html += '</div>';
+        }
+
+        // Vehiculo
+        if (selectedVehiculo) {
+            var m = document.getElementById('marca').value.trim();
+            var mo = document.getElementById('modelo').value.trim();
+            html += '<div class="summary-section"><h6>Vehiculo</h6>';
+            html += '<div class="summary-row"><span class="slabel">' + selectedVehiculo.nombre;
+            if (m) html += ' · ' + m + (mo ? ' ' + mo : '');
+            html += '</span></div></div>';
+        }
+
+        // Servicio
+        var svcParts = [];
+        if (selectedCategoria) svcParts.push(selectedCategoria.nombre);
+        if (selectedLavadoSlug) {
+            var tl = lavadosData.find(function(l) { return l.slug === selectedLavadoSlug; });
+            if (tl) svcParts.push(tl.nombre);
+        }
+        if (selectedSubtipoSlug) {
+            var st = subtiposData.find(function(s) { return s.slug === selectedSubtipoSlug; });
+            if (st) svcParts.push(st.nombre);
+        }
+        if (selectedDetalladoSlug) {
+            var td = detalladosData.find(function(d) { return d.slug === selectedDetalladoSlug; });
+            if (td) svcParts.push(td.nombre);
+        }
+        if (svcParts.length > 0) {
+            html += '<div class="summary-section"><h6>Servicio</h6>';
+            html += '<div class="summary-row"><span class="slabel">' + svcParts.join(' · ') + '</span></div>';
+            html += '</div>';
+        }
+
+        // Precio y duracion
+        if (pricingResult) {
+            var esEst = pricingResult.es_precio_estimado;
+            var precio = esEst ? (pricingResult.precio_estimado || 0) : (pricingResult.precio_fijo || 0);
+            html += '<div class="summary-section"><h6>Costo y tiempo</h6>';
+            html += '<div class="summary-row"><span class="slabel">Precio</span><span class="svalue">' + formatGuarani(precio) + (esEst ? ' (estimado)' : '') + '</span></div>';
+            html += '<div class="summary-row"><span class="slabel">Duracion</span><span class="svalue">' + formatearDuracion(pricingResult.tiempo_estimado_min) + '</span></div>';
+            html += '</div>';
+        }
+
+        // Agenda
+        var fecha = document.getElementById('fecha-input').value;
+        var hora = document.getElementById('hora').value;
+        if (fecha || hora) {
+            html += '<div class="summary-section"><h6>Agenda</h6>';
+            if (fecha) html += '<div class="summary-row"><span class="slabel">Ingreso</span><span class="svalue">' + formatearFecha(fecha) + (hora ? ' · ' + hora + ' hs' : '') + '</span></div>';
+            if (hora && pricingResult && pricingResult.tiempo_estimado_min) {
+                var dur = pricingResult.tiempo_estimado_min;
+                var hhIn = parseInt(hora.split(':')[0]), mmIn = parseInt(hora.split(':')[1]);
+                var totalMin = hhIn * 60 + mmIn + dur;
+                var hhFin = Math.floor(totalMin / 60) % 24, mmFin = totalMin % 60;
+                var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+                if (dur > 180) {
+                    var horasDia = 8, diasHabiles = Math.ceil(dur / (horasDia * 60));
+                    html += '<div class="summary-row"><span class="slabel">Entrega est.</span><span class="svalue">~' + diasHabiles + ' dia(s) · ' + pad(hhFin) + ':' + pad(mmFin) + ' hs</span></div>';
+                } else {
+                    html += '<div class="summary-row"><span class="slabel">Entrega est.</span><span class="svalue">' + pad(hhFin) + ':' + pad(mmFin) + ' hs</span></div>';
+                }
+            }
+            html += '</div>';
+        }
+
+        el.innerHTML = html || '<p style="color:var(--text-muted);font-size:0.78rem;">Completa el formulario para ver el resumen aqui.</p>';
+    }
+
     // ==================== RESUMEN ====================
     function updateResumen() {
         var g = function(id) { return document.getElementById(id).value; };
@@ -1162,6 +1273,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         document.getElementById('resumenTotalMonto').textContent = formatGuarani(total);
         document.getElementById('resumenDuracion').textContent = formatearDuracion(dur);
     }
+
+    // Hook updateResumen to also call updateDynamicSummary
+    var _originalUpdateResumen = updateResumen;
+    updateResumen = function() {
+        _originalUpdateResumen();
+        updateDynamicSummary();
+    };
 
     // ==================== SUBMIT ====================
     window.submitReserva = function() {
