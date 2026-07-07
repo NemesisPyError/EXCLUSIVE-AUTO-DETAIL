@@ -888,7 +888,22 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         container.innerHTML = html;
     }
 
-    // ==================== NAVIGATION (History API) ====================
+    // ==================== NAVIGATION (History API + validacion segura) ====================
+    var maxStepReached = 1;
+
+    var HASH_RE = /^#paso-([1-5])$/;
+
+    function parseHashStep() {
+        var m = window.location.hash && window.location.hash.match(HASH_RE);
+        if (!m) return null;
+        return parseInt(m[1]);
+    }
+
+    function clampStep(step) {
+        step = Math.max(1, Math.min(step, maxStepReached, totalSteps));
+        return step;
+    }
+
     function switchToStep(step) {
         // Ocultar todos los pasos y quitar clases activas/done
         document.querySelectorAll('.step-content').forEach(function(el) { el.classList.remove('active'); });
@@ -929,43 +944,44 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         window.scrollTo({ top: document.querySelector('.wizard-container').offsetTop - 100, behavior: 'smooth' });
     }
 
-    function navigateToStep(step) {
-        history.pushState({ step: step }, '', '#paso-' + step);
+    function navigateToStep(step, pushToHistory) {
+        step = clampStep(step);
+        if (pushToHistory !== false) {
+            history.pushState({ step: step }, '', '#paso-' + step);
+        }
         switchToStep(step);
     }
 
     window.nextStep = function(from) {
         if (!validateStep(from)) return;
-        navigateToStep(from + 1);
+        if (from + 1 > maxStepReached) {
+            maxStepReached = from + 1;
+        }
+        navigateToStep(from + 1, true);
     };
 
     window.prevStep = function(from) {
-        navigateToStep(from - 1);
+        navigateToStep(from - 1, true);
     };
 
     window.addEventListener('popstate', function(event) {
-        var hash = window.location.hash;
-        var match = hash && hash.match(/paso-(\d+)/);
-        if (!match) return;
-        var step = parseInt(match[1]);
-        if (step >= 1 && step <= totalSteps) {
-            switchToStep(step);
+        var requested = parseHashStep();
+        if (requested === null) {
+            navigateToStep(maxStepReached, false);
+            return;
         }
+        navigateToStep(requested, false);
     });
 
     // Restaurar paso desde URL al cargar la pagina
     (function () {
-        var hash = window.location.hash;
-        var match = hash && hash.match(/paso-(\d+)/);
-        if (match) {
-            var step = parseInt(match[1]);
-            if (step >= 2 && step <= totalSteps) {
-                switchToStep(step);
-                return;
-            }
+        var requested = parseHashStep();
+        if (requested !== null && requested > 1 && requested <= totalSteps) {
+            navigateToStep(requested, false);
+        } else {
+            history.replaceState({ step: 1 }, '', '#paso-1');
         }
-        // Sin hash o paso 1: establecer estado inicial sin crear entrada de historial
-        history.replaceState({ step: 1 }, '', '#paso-1');
+        // maxStepReached ya es 1 — no se puede avanzar sin validar datos
     })();
 
     // ==================== VALIDATION ====================
