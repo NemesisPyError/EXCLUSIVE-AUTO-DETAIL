@@ -141,6 +141,107 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
 
 /* Multi-day range */
 .multi-dia-display { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.9rem; text-align: center; }
+
+/* ================================================================
+   MOBILE OPTIMIZATIONS — iPhone SE (375px) to Tablets
+   ================================================================ */
+@media (max-width: 575px) {
+    body { padding-top: 60px; }
+
+    .wizard-container { padding: 0.5rem 0.75rem 2rem; }
+
+    .wizard-container h2 { font-size: 1.3rem; margin-bottom: 0.15rem !important; }
+    .wizard-container > .text-center > p { font-size: 0.72rem !important; margin-bottom: 1rem !important; }
+
+    /* Progress compact */
+    .progress-info { font-size: 0.65rem; margin-bottom: 0.25rem; }
+    .progress-bar-wrap { height: 3px; margin-bottom: 0.75rem; }
+    .progress-steps { margin-bottom: 1.25rem; }
+    .progress-steps .step .circle { width: 28px; height: 28px; font-size: 0.7rem; margin-bottom: 0.25rem; }
+    .progress-steps .step .label { font-size: 0.58rem; }
+    .progress-steps::before { top: 13px; height: 2px; }
+    .step-indicator span { font-size: 0.68rem; }
+
+    /* Cards — touch-optimized */
+    .option-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.4rem; }
+    .option-card { padding: 0.85rem 0.4rem; border-radius: 8px; }
+    .option-card i { font-size: 1.2rem; margin-bottom: 0.25rem; }
+    .option-card span { font-size: 0.7rem; }
+    .option-card small { font-size: 0.6rem; }
+
+    .cat-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.4rem; }
+    .cat-card { padding: 0.9rem 0.5rem; border-radius: 8px; }
+    .cat-card i { font-size: 1.3rem; margin-bottom: 0.3rem; }
+    .cat-card h6 { font-size: 0.72rem; }
+    .cat-card small { font-size: 0.6rem; }
+
+    /* Horarios — bigger tap targets */
+    .horario-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.4rem; margin-top: 0.5rem; }
+    .horario-btn { padding: 0.65rem 0.35rem; font-size: 0.78rem; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
+    .horario-btn .lugares { font-size: 0.58rem; }
+
+    /* Forms */
+    .form-control { padding: 0.7rem 0.8rem; font-size: 16px !important; min-height: 48px; border-radius: 8px; }
+    .form-label { font-size: 0.78rem; margin-bottom: 0.2rem; }
+    .row.g-3 { --bs-gutter-y: 0.5rem; }
+    .row.g-4 { --bs-gutter-y: 0.65rem; }
+
+    /* Buttons - 48px min touch target */
+    .btn-primary-custom, .btn-outline-custom, .btn-sm-custom {
+        min-height: 48px; font-size: 0.88rem; padding: 0.65rem 1.25rem;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .wizard-nav { margin-top: 1.25rem; gap: 0.6rem; }
+
+    /* Sections */
+    .ingreso-section { padding: 0.85rem; margin-bottom: 0.65rem; border-radius: 10px; }
+    .ingreso-section h6 { font-size: 0.7rem; margin-bottom: 0.5rem; }
+    .dynamic-summary { padding: 0.75rem; margin-top: 0.75rem; }
+    .dynamic-summary h5 { font-size: 0.75rem; margin-bottom: 0.5rem; padding-bottom: 0.4rem; }
+    .dynamic-summary .summary-row { font-size: 0.75rem; padding: 0.25rem 0; }
+
+    .resumen-total { padding: 0.85rem; margin-top: 0.65rem; border-radius: 10px; }
+    .resumen-total-line span:last-child { font-size: 1.2rem; }
+    .resumen-card { padding: 0.75rem; margin-bottom: 0.5rem; }
+    .resumen-card p { font-size: 0.82rem; }
+
+    .info-card { padding: 0.85rem; border-radius: 10px; }
+    .info-card .info-meta { gap: 0.75rem; margin-top: 0.5rem; padding-top: 0.5rem; }
+    .info-card .info-header i { font-size: 1.4rem; }
+
+    .service-detail { padding: 0.85rem; }
+    .service-detail .svc-meta { gap: 0.75rem; flex-wrap: wrap; }
+
+    /* Typography */
+    h4 { font-size: 1.1rem; }
+    h5 { font-size: 1rem; }
+    h6 { font-size: 0.8rem; }
+}
+
+/* ================================================================
+   iOS Safe Area — notch, Dynamic Island, home indicator
+   ================================================================ */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .wizard-container { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+    .wizard-nav { padding-bottom: env(safe-area-inset-bottom); }
+    body { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* iOS 100vh fix */
+@supports (-webkit-touch-callout: none) {
+    .wizard-container { min-height: -webkit-fill-available; }
+}
+
+/* Prevent hover lift on mobile (touch devices) */
+@media (hover: none) and (pointer: coarse) {
+    .option-card:hover, .cat-card:hover { transform: none; box-shadow: none; }
+    .option-card.selected, .cat-card.selected { transform: none; box-shadow: 0 2px 8px rgba(26,107,255,0.1); }
+}
+
+/* Active/touch feedback */
+.option-card:active, .cat-card:active, .horario-btn:active:not(.disabled) {
+    transform: scale(0.97); transition: transform 0.1s;
+}
 </style>
 {% endblock %}
 
@@ -1359,6 +1460,18 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
     document.getElementById('cedula').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9.\-]/gi, '');
     });
+
+    // Keyboard handling — scroll to focused input on mobile
+    var isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
+    if (isMobile) {
+        document.addEventListener('focusin', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                setTimeout(function() {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+    }
 
 })();
 </script>
