@@ -892,38 +892,85 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
         container.innerHTML = html;
     }
 
-    // ==================== NAVIGATION ====================
-    window.nextStep = function(from) {
-        if (!validateStep(from)) return;
-        document.querySelector('.step-content[data-step="' + from + '"]').classList.remove('active');
-        document.querySelector('.step[data-step="' + from + '"]').classList.remove('active');
-        document.querySelector('.step[data-step="' + from + '"]').classList.add('done');
-        currentStep = from + 1;
-        document.querySelector('.step-content[data-step="' + currentStep + '"]').classList.add('active');
-        document.querySelector('.step[data-step="' + currentStep + '"]').classList.add('active');
+    // ==================== NAVIGATION (History API) ====================
+    function switchToStep(step) {
+        // Ocultar todos los pasos y quitar clases activas/done
+        document.querySelectorAll('.step-content').forEach(function(el) { el.classList.remove('active'); });
+        document.querySelectorAll('.progress-steps .step').forEach(function(el) {
+            el.classList.remove('active', 'done');
+        });
 
-        if (currentStep === 4) buildStep4();
-        if (currentStep === 5) {
-            document.getElementById('fecha-input').value = hoy;
-            updateResumen();
-            cargarHorarios(hoy);
+        // Marcar pasos anteriores como done
+        for (var i = 1; i < step; i++) {
+            var prevStepEl = document.querySelector('.step[data-step="' + i + '"]');
+            if (prevStepEl) prevStepEl.classList.add('done');
         }
-        window.scrollTo({ top: document.querySelector('.wizard-container').offsetTop - 100, behavior: 'smooth' });
-    };
 
-    window.prevStep = function(from) {
-        document.querySelector('.step-content[data-step="' + from + '"]').classList.remove('active');
-        document.querySelector('.step[data-step="' + from + '"]').classList.remove('active');
-        document.querySelector('.step[data-step="' + (from - 1) + '"]').classList.remove('done');
-        currentStep = from - 1;
-        document.querySelector('.step-content[data-step="' + currentStep + '"]').classList.add('active');
-        document.querySelector('.step[data-step="' + currentStep + '"]').classList.add('active');
-        if (from === 5) {
+        // Activar paso actual
+        var contentEl = document.querySelector('.step-content[data-step="' + step + '"]');
+        var indicatorEl = document.querySelector('.step[data-step="' + step + '"]');
+        if (contentEl) contentEl.classList.add('active');
+        if (indicatorEl) indicatorEl.classList.add('active');
+
+        // Limpiar seleccion de hora al salir del paso 5
+        if (currentStep === 5 && step !== 5) {
             document.getElementById('hora').value = '';
             document.querySelectorAll('.horario-btn').forEach(function(b) { b.classList.remove('selected'); });
         }
+
+        currentStep = step;
+
+        // Logica especifica del paso
+        if (step === 4) buildStep4();
+        if (step === 5) {
+            if (!document.getElementById('fecha-input').value) {
+                document.getElementById('fecha-input').value = hoy;
+            }
+            updateResumen();
+            cargarHorarios(document.getElementById('fecha-input').value || hoy);
+        }
+
         window.scrollTo({ top: document.querySelector('.wizard-container').offsetTop - 100, behavior: 'smooth' });
+    }
+
+    function navigateToStep(step) {
+        history.pushState({ step: step }, '', '#paso-' + step);
+        switchToStep(step);
+    }
+
+    window.nextStep = function(from) {
+        if (!validateStep(from)) return;
+        navigateToStep(from + 1);
     };
+
+    window.prevStep = function(from) {
+        navigateToStep(from - 1);
+    };
+
+    window.addEventListener('popstate', function(event) {
+        var hash = window.location.hash;
+        var match = hash && hash.match(/paso-(\d+)/);
+        if (!match) return;
+        var step = parseInt(match[1]);
+        if (step >= 1 && step <= totalSteps) {
+            switchToStep(step);
+        }
+    });
+
+    // Restaurar paso desde URL al cargar la pagina
+    (function () {
+        var hash = window.location.hash;
+        var match = hash && hash.match(/paso-(\d+)/);
+        if (match) {
+            var step = parseInt(match[1]);
+            if (step >= 2 && step <= totalSteps) {
+                switchToStep(step);
+                return;
+            }
+        }
+        // Sin hash o paso 1: establecer estado inicial sin crear entrada de historial
+        history.replaceState({ step: 1 }, '', '#paso-1');
+    })();
 
     // ==================== VALIDATION ====================
     function validateStep(step) {
@@ -1194,9 +1241,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cur
     document.getElementById('cedula').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9.\-]/gi, '');
     });
-
-    // Load initial horarios
-    cargarHorarios(hoy);
 
 })();
 </script>
