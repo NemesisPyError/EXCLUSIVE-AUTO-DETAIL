@@ -6,18 +6,18 @@
 <style>
     .time-picker-row { display:flex; align-items:center; gap:0.5rem; }
     .time-picker-row select {
-        background: var(--bg-primary); border: 1px solid var(--border-subtle);
-        color: var(--white); border-radius: 6px; padding: 0.45rem 0.5rem;
-        font-size: 0.95rem; text-align: center; font-family: var(--font);
+        background: var(--color-bg-0); border: 1px solid var(--color-border);
+        color: var(--color-text-primary); border-radius: 6px; padding: 0.45rem 0.5rem;
+        font-size: 0.95rem; text-align: center; font-family: var(--font-family);
     }
     .time-ampm {
         padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700;
-        background: transparent; border: 1px solid var(--border-subtle);
-        color: var(--text-muted); border-radius: 6px; cursor: pointer;
-        transition: 0.2s; font-family: var(--font);
+        background: transparent; border: 1px solid var(--color-border);
+        color: var(--color-text-secondary); border-radius: 6px; cursor: pointer;
+        transition: 0.2s; font-family: var(--font-family);
     }
     .time-ampm.active {
-        background: var(--accent); border-color: var(--accent); color: var(--white);
+        background: var(--color-brand); border-color: var(--color-brand); color: var(--color-text-primary);
     }
 </style>
 {% endblock %}
@@ -55,7 +55,7 @@
                     <td>
                         <input type="number" class="capacidad-input" data-id="{{ h.id }}"
                                value="{{ h.capacidad_maxima }}" min="1" max="50"
-                               style="width:70px;background:var(--bg-primary);border:1px solid var(--border-subtle);color:var(--white);border-radius:6px;padding:0.3rem 0.5rem;text-align:center;font-size:0.85rem;">
+                               style="width:70px;background:var(--color-bg-0);border:1px solid var(--color-border);color:var(--color-text-primary);border-radius:6px;padding:0.3rem 0.5rem;text-align:center;font-size:0.85rem;">
                         <button class="btn-sm-custom btn-guardar-cap" data-id="{{ h.id }}" style="padding:0.3rem 0.6rem;font-size:0.72rem;display:none;">
                             <i class="fa-solid fa-check"></i>
                         </button>
@@ -65,8 +65,8 @@
                             <input type="checkbox" class="toggle-horario" data-id="{{ h.id }}"
                                    {% if h.activo %}checked{% endif %}
                                    style="opacity:0;width:0;height:0;">
-                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if h.activo %}var(--accent){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
-                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--white);top:2px;left:{% if h.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
+                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if h.activo %}var(--color-brand){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
+                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);top:2px;left:{% if h.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
                             </span>
                         </label>
                     </td>
@@ -80,7 +80,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">No hay horarios configurados.</td></tr>
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No hay horarios configurados.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -117,7 +117,7 @@
                             <select class="time-hour" style="width:75px;">
                                 {% for h in range(1,13) %}<option value="{{ h }}">{{ h }}</option>{% endfor %}
                             </select>
-                            <span style="color:var(--text-muted);">:</span>
+                            <span style="color:var(--color-text-secondary);">:</span>
                             <select class="time-min" style="width:75px;">
                                 {% for m in range(0,60,5) %}<option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>{% endfor %}
                             </select>
@@ -132,7 +132,7 @@
                             <select class="time-hour" style="width:75px;">
                                 {% for h in range(1,13) %}<option value="{{ h }}">{{ h }}</option>{% endfor %}
                             </select>
-                            <span style="color:var(--text-muted);">:</span>
+                            <span style="color:var(--color-text-secondary);">:</span>
                             <select class="time-min" style="width:75px;">
                                 {% for m in range(0,60,5) %}<option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>{% endfor %}
                             </select>

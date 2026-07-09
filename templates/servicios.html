@@ -3,41 +3,46 @@
 {% block title %}Servicios — Exclusive Auto Detail{% endblock %}
 
 {% block content %}
-<section class="py-5" style="background:var(--bg-dark);min-height:60vh;">
+<section class="py-5" style="background:var(--color-bg-0);min-height:60vh;">
     <div class="container">
-        <h2 class="text-center mb-4" style="font-weight:700;color:var(--accent-gold);">
+        <h2 class="text-center mb-4" style="font-weight:700;color:var(--color-gold);">
             Nuestros Servicios
         </h2>
-        <p class="text-center text-white-50 mb-5">
-            Calidad profesional para tu vehículo
+        <p class="text-center" style="color:var(--color-text-secondary);margin-bottom:var(--space-5);">
+            Calidad profesional para tu vehiculo
         </p>
 
         {% if servicios %}
-        <div class="row g-4">
-            {% for s in servicios %}
+        {% set tipos = {'base': 'Servicios', 'paquete': 'Paquetes', 'adicional': 'Adicionales'} %}
+        {% for tipo_key, tipo_label in tipos.items() %}
+        {% set filtrados = servicios|selectattr('tipo', 'equalto', tipo_key)|list %}
+        {% if filtrados %}
+        <h4 class="text-white-50 mb-3">{{ tipo_label }}</h4>
+        <div class="row g-4 mb-4">
+            {% for s in filtrados %}
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0" style="background:var(--bg-card);color:var(--text-light);">
+                <div class="ead-card h-100">
                     <div class="card-body">
                         <h5 class="card-title" style="font-weight:600;">{{ s.nombre }}</h5>
                         {% if s.descripcion %}
-                        <p class="card-text text-white-50" style="font-size:0.9rem;">{{ s.descripcion }}</p>
+                        <p class="card-text" style="color:var(--color-text-secondary);font-size:0.9rem;">{{ s.descripcion }}</p>
                         {% endif %}
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span style="color:var(--accent-gold);font-weight:700;">
-                                {% if s.precio %}₲ {{ s.precio|thousandsep }}{% else %}GRATIS{% endif %}
-                            </span>
-                            <small class="text-white-50">
-                                <i class="fa-regular fa-clock me-1"></i>{{ s.tiempo_estimado_formateado }}
-                            </small>
-                        </div>
+                        {% if s.requiere_inspeccion_previa %}
+                        <span class="badge-estado badge-warning">Requiere inspeccion previa</span>
+                        {% endif %}
+                        {% if s.requiere_varios_dias %}
+                        <span class="badge-estado badge-brand">{{ s.dias_bloqueo }} dias requeridos</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
+        {% endif %}
+        {% endfor %}
         {% else %}
-        <div class="text-center text-white-50 py-5">
-            <i class="fa-solid fa-circle-info fa-2x mb-3"></i>
+        <div class="ead-empty-state">
+            <i class="fa-solid fa-circle-info"></i>
             <p>No hay servicios disponibles en este momento.</p>
         </div>
         {% endif %}

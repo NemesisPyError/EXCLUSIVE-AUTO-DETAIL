@@ -1,44 +1,56 @@
+from datetime import datetime, timezone
 from extensions import db
-from datetime import datetime
-import enum
-
-
-class CategoriaServicioEnum(str, enum.Enum):
-    LAVADO_VEHICULO     = 'lavado_vehiculo'
-    LAVADO_MOTO         = 'lavado_moto'
-    TRATAMIENTO_PINTURA = 'tratamiento_pintura'
-    RETIRO_ENTREGA      = 'retiro_entrega'
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, CheckConstraint
+from typing import Optional, List
 
 
 class Servicio(db.Model):
     __tablename__ = 'servicios'
-
-    id                  = db.Column(db.Integer, primary_key=True)
-
-    nombre              = db.Column(db.String(120), nullable=False)
-    descripcion         = db.Column(db.Text, nullable=True)
-
-    categoria           = db.Column(db.String(30), nullable=False)
-    categoria_servicio_id = db.Column(
-        db.Integer, db.ForeignKey('categorias_servicio.id'), nullable=True
+    __table_args__ = (
+        CheckConstraint(
+            "tipo IN ('base', 'adicional', 'paquete')",
+            name='ck_servicios_tipo',
+        ),
+        CheckConstraint(
+            "requiere_varios_dias = FALSE OR dias_bloqueo IS NOT NULL",
+            name='ck_servicios_dias',
+        ),
     )
 
-    precio              = db.Column(db.Numeric(10, 2), nullable=False, default=0)
-    tiempo_estimado_min = db.Column(db.Integer, nullable=False, default=0)
-    activo              = db.Column(db.Boolean, default=True)
-    created_at          = db.Column(db.DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    categoria_servicio_id: Mapped[int] = mapped_column(
+        ForeignKey('categorias_servicio.id'), nullable=False, index=True
+    )
+    nombre: Mapped[str] = mapped_column(db.String(80), nullable=False)
+    slug: Mapped[str] = mapped_column(db.String(80), unique=True, nullable=False)
+    descripcion: Mapped[Optional[str]] = mapped_column(db.Text, nullable=True)
+    tipo: Mapped[str] = mapped_column(db.String(15), nullable=False)
+    requiere_inspeccion_previa: Mapped[bool] = mapped_column(
+        db.Boolean, default=False, nullable=False
+    )
+    requiere_varios_dias: Mapped[bool] = mapped_column(
+        db.Boolean, default=False, nullable=False
+    )
+    dias_bloqueo: Mapped[Optional[int]] = mapped_column(db.SmallInteger, nullable=True)
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
 
-    categoria_rel = db.relationship('CategoriaServicio', backref='servicios')
-
-    @property
-    def tiempo_estimado_formateado(self):
-        horas = self.tiempo_estimado_min // 60
-        minutos = self.tiempo_estimado_min % 60
-        if horas and minutos:
-            return f'{horas}h {minutos}min'
-        if horas:
-            return f'{horas}h'
-        return f'{minutos}min'
+    categoria: Mapped['CategoriaServicio'] = relationship(back_populates='servicios')
+    precios: Mapped[List['PrecioServicio']] = relationship(back_populates='servicio')
+    reservas: Mapped[List['Reserva']] = relationship(back_populates='servicio')
+    reserva_adicionales: Mapped[List['ReservaAdicional']] = relationship(back_populates='servicio')
 
     def __repr__(self):
-        return f'<Servicio {self.nombre}>'
+        return f'<Servicio {self.nombre} ({self.tipo})>'

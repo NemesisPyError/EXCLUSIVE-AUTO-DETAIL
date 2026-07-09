@@ -4,121 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ingresar — Exclusive Auto Detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <style>
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-            background-color: #0d0d0d;
-            color: #e0e0e0;
+            font-family: var(--font-family);
+            background:
+                radial-gradient(circle at 50% 30%, rgba(26, 107, 255, 0.06), transparent 60%),
+                var(--color-bg-0);
+            color: var(--color-text-secondary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
-        }
-        .login-card {
-            background-color: #1a1a1a;
-            border-radius: 16px;
-            padding: 2.5rem 2rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            padding: var(--space-5);
         }
         .logo {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: var(--space-5);
         }
         .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.5px;
+            font: var(--text-title-md);
+            color: var(--color-text-primary);
         }
         .logo span {
-            color: #1a6bff;
+            color: var(--color-brand);
         }
         .logo p {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 0.25rem;
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            margin-top: var(--space-1);
         }
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-        label {
+        .forgot-link {
             display: block;
-            font-size: 0.85rem;
-            color: #aaa;
-            margin-bottom: 0.4rem;
-        }
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background-color: #262626;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #e0e0e0;
-            font-size: 0.95rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #1a6bff;
-            box-shadow: 0 0 0 3px rgba(26, 107, 255, 0.2);
-        }
-        .btn-submit {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: #1a6bff;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn-submit:hover {
-            background-color: #1557d9;
-        }
-        .alert {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 1.25rem;
             text-align: center;
+            margin-top: var(--space-4);
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: color var(--duration-base) var(--easing-standard);
         }
-        .alert-danger {
-            background-color: rgba(220, 53, 69, 0.15);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            color: #f5a3a3;
-        }
-        .alert-success {
-            background-color: rgba(25, 135, 84, 0.15);
-            border: 1px solid rgba(25, 135, 84, 0.3);
-            color: #9bddb0;
-        }
-        .alert-info {
-            background-color: rgba(13, 202, 240, 0.15);
-            border: 1px solid rgba(13, 202, 240, 0.3);
-            color: #9eeaf9;
+        .forgot-link:hover {
+            color: var(--color-text-primary);
         }
         .footer-text {
             text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.75rem;
-            color: #555;
+            margin-top: var(--space-5);
+            font: var(--text-overline);
+            text-transform: none;
+            letter-spacing: normal;
+            color: var(--color-text-tertiary);
+        }
+        .form-group {
+            margin-bottom: var(--space-4);
+        }
+        label {
+            display: block;
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-1);
+        }
+        form .btn-primary {
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
+    <div class="ead-card" style="padding:var(--space-5) var(--space-4);max-width:400px;">
         <div class="logo">
             <h1>Exclusive <span>Auto Detail</span></h1>
             <p>Panel de administración</p>
@@ -127,7 +82,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
+        <div class="ead-alert ead-alert-{{ category }}">{{ message }}</div>
         {% endfor %}
         {% endif %}
         {% endwith %}
@@ -137,21 +92,19 @@
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email"
-                       placeholder="admin@exclusiveautodetail.com" required autofocus>
+                       placeholder="tu@email.com" required autofocus class="ead-input">
             </div>
             <div class="form-group">
                 <label for="password">Contraseña</label>
                 <input type="password" id="password" name="password"
-                       placeholder="Ingresa tu contraseña" required>
+                       placeholder="Ingresa tu contrasena" required class="ead-input">
             </div>
-            <button type="submit" class="btn-submit">Ingresar</button>
+            <button type="submit" class="btn-primary">Ingresar</button>
         </form>
 
-        <div style="text-align:center;margin-top:1rem;">
-            <a href="{{ url_for('auth.forgot_password') }}" style="color:#888;text-decoration:none;font-size:0.8rem;">
-                Olvidaste tu contrasena?
-            </a>
-        </div>
+        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">
+            Olvidaste tu contrasena?
+        </a>
 
         <div class="footer-text">
             &copy; 2026 Exclusive Auto Detail

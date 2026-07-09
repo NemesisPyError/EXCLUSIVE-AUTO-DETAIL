@@ -38,7 +38,7 @@
         <table class="table-admin">
             <thead>
                 <tr>
-                    <th style="width:36px;"><input type="checkbox" id="selectAll" style="accent-color:var(--accent);cursor:pointer;" title="Seleccionar todos"></th>
+                    <th style="width:36px;"><input type="checkbox" id="selectAll" style="accent-color:var(--color-brand);cursor:pointer;" title="Seleccionar todos"></th>
                     <th>#</th>
                     <th>Cliente</th>
                     <th>Telefono</th>
@@ -55,20 +55,20 @@
             <tbody>
                 {% for r in reservas %}
                 <tr>
-                    <td><input type="checkbox" class="chk-reserva" value="{{ r.id }}" style="accent-color:var(--accent);cursor:pointer;"></td>
-                    <td><a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" style="color:var(--accent);font-weight:700;text-decoration:none;">{{ r.id }}</a></td>
+                    <td><input type="checkbox" class="chk-reserva" value="{{ r.id }}" style="accent-color:var(--color-brand);cursor:pointer;"></td>
+                    <td><a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" style="color:var(--color-brand);font-weight:700;text-decoration:none;">{{ r.id }}</a></td>
                     <td>{{ r.cliente.nombre }} {{ r.cliente.apellido }}</td>
-                    <td style="font-size:0.8rem;color:var(--text-muted);">{{ r.cliente.telefono }}</td>
+                    <td style="font-size:0.8rem;color:var(--color-text-secondary);">{{ r.cliente.telefono }}</td>
                     <td style="font-size:0.8rem;">
                         {% set v = r.vehiculos.first() %}
                         {% if v %}{{ v.marca }} {{ v.modelo }}{% else %}--{% endif %}
                     </td>
-                    <td style="font-size:0.8rem;color:var(--text-muted);">
+                    <td style="font-size:0.8rem;color:var(--color-text-secondary);">
                         {% if r.categoria_servicio %}{{ r.categoria_servicio.nombre }}{% else %}--{% endif %}
                     </td>
                     <td>{{ r.fecha.strftime('%d/%m/%Y') }}</td>
                     <td>{{ r.hora_inicio.strftime('%H:%M') }}</td>
-                    <td style="font-size:0.78rem;color:var(--text-muted);">{{ (r.duracion_total_min|string + ' min') if r.duracion_total_min else '--' }}</td>
+                    <td style="font-size:0.78rem;color:var(--color-text-secondary);">{{ (r.duracion_total_min|string + ' min') if r.duracion_total_min else '--' }}</td>
                     <td style="font-size:0.78rem;">{{ r.asignado_a.nombre if r.asignado_a else '--' }}</td>
                     <td>
                         <span class="badge-estado" style="background:{{ r.estado.color_badge }}22;color:{{ r.estado.color_badge }};border:1px solid {{ r.estado.color_badge }}44;">
@@ -89,7 +89,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--text-muted);">No se encontraron reservas.</td></tr>
+                <tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No se encontraron reservas.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -112,7 +112,7 @@
         {% if paginacion.has_next %}
         <a href="{{ url_for('admin.listar_reservas', page=paginacion.next_num, estado=filtro_estado, fecha=filtro_fecha, buscar=filtro_buscar, vista=request.args.get('vista','tabla')) }}"><i class="fa-solid fa-chevron-right"></i></a>
         {% endif %}
-        <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem;">{{ paginacion.total }} reservas</span>
+        <span style="font-size:0.78rem;color:var(--color-text-secondary);margin-left:0.5rem;">{{ paginacion.total }} reservas</span>
     </div>
     {% endif %}
 </div>
@@ -129,11 +129,11 @@
 
         <div style="display:flex;margin-bottom:0.5rem;padding-left:120px;">
             {% for h in range(hora_min, hora_max + 1) %}
-            <div style="flex:1;text-align:center;font-size:0.65rem;color:var(--text-muted);">{{ '%02d' % h }}:00</div>
+            <div style="flex:1;text-align:center;font-size:0.65rem;color:var(--color-text-secondary);">{{ '%02d' % h }}:00</div>
             {% endfor %}
         </div>
 
-        <div style="position:relative;border-top:1px solid var(--border-subtle);min-height:300px;padding-top:0.5rem;">
+        <div style="position:relative;border-top:1px solid var(--color-border);min-height:300px;padding-top:0.5rem;">
             {% for r in reservas %}
             {% set hora_inicio_min = r.hora_inicio.hour * 60 + r.hora_inicio.minute %}
             {% set hora_fin_min = (r.hora_fin.hour * 60 + r.hora_fin.minute) if r.hora_fin else (hora_inicio_min + (r.duracion_total_min or 60)) %}
@@ -147,7 +147,7 @@
             <div style="position:relative;height:38px;margin-bottom:4px;">
                 <a href="{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}" style="position:absolute;left:calc({{ left_pct }}% + 120px);width:{{ width_pct }}%;height:100%;
                     background:{{ r.estado.color_badge }}18;border:1px solid {{ r.estado.color_badge }}33;border-radius:6px;
-                    display:flex;align-items:center;padding:0 0.5rem;color:var(--white);text-decoration:none;font-size:0.72rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:0.2s;">
+                    display:flex;align-items:center;padding:0 0.5rem;color:var(--color-text-primary);text-decoration:none;font-size:0.72rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:0.2s;">
                     <span style="font-weight:700;">#{{ r.id }}</span>
                     <span style="margin-left:0.5rem;opacity:0.8;">{{ r.cliente.nombre }}</span>
                     <span style="margin-left:0.5rem;font-weight:600;color:{{ r.estado.color_badge }};">{{ r.hora_inicio.strftime('%H:%M') }}</span>
@@ -171,8 +171,8 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion</h6></div>
-            <div class="modal-body" style="font-size:0.85rem;color:var(--text-muted);">
-                Estas seguro de eliminar la reserva <strong id="eliminarNumero" style="color:var(--white);"></strong>? Esta accion no se puede deshacer.
+            <div class="modal-body" style="font-size:0.85rem;color:var(--color-text-secondary);">
+                Estas seguro de eliminar la reserva <strong id="eliminarNumero" style="color:var(--color-text-primary);"></strong>? Esta accion no se puede deshacer.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
@@ -190,7 +190,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion masiva</h6></div>
-            <div class="modal-body" style="font-size:0.85rem;color:var(--text-muted);">
+            <div class="modal-body" style="font-size:0.85rem;color:var(--color-text-secondary);">
                 Estas seguro de eliminar <strong id="cantidadEliminarMasivo" style="color:var(--danger);"></strong> reservas? Esta accion no se puede deshacer.
             </div>
             <div class="modal-footer">

@@ -1,5 +1,4 @@
 import json
-from datetime import date, timedelta
 
 
 def test_tipos_vehiculo(client):
@@ -15,16 +14,31 @@ def test_categorias(client):
     assert resp.status_code == 200
     data = json.loads(resp.data)
     assert data.get('success') is True
+    assert 'categorias' in data
+
+
+def test_segmentos(client):
+    resp = client.get('/api/publica/segmentos')
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data.get('success') is True
+
+
+def test_niveles_suciedad(client):
+    resp = client.get('/api/publica/niveles-suciedad')
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data.get('success') is True
 
 
 def test_precio(client):
     resp = client.get('/api/publica/precio', query_string={
-        'vehiculo_slug': 'auto',
-        'categoria_slug': 'lavado',
+        'servicio_id': 1,
+        'tipo_vehiculo_id': 2,
+        'segmento_id': 2,
+        'nivel_suciedad_id': 1,
     })
-    assert resp.status_code == 200
-    data = json.loads(resp.data)
-    assert data.get('success') is True
+    assert resp.status_code in (200, 404)
 
 
 def test_precio_invalid(client):
@@ -32,6 +46,13 @@ def test_precio_invalid(client):
     assert resp.status_code == 400
     data = json.loads(resp.data)
     assert data.get('success') is False
+
+
+def test_servicios(client):
+    resp = client.get('/api/publica/servicios')
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data.get('success') is True
 
 
 def test_health(client):

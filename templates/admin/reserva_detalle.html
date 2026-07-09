@@ -28,14 +28,14 @@
                 </span>
             </div>
             <p style="font-size:0.95rem;font-weight:600;">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</p>
-            <p style="font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-phone me-2"></i>{{ reserva.cliente.telefono }}
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);"><i class="fa-solid fa-phone me-2"></i>{{ reserva.cliente.telefono }}
                 {% if whatsapp_link %}<a href="{{ whatsapp_link }}" target="_blank" rel="noopener" title="Enviar WhatsApp" style="color:#25d366;margin-left:0.5rem;"><i class="fa-brands fa-whatsapp fa-lg"></i></a>{% endif %}
             </p>
             {% if reserva.cliente.cedula %}
-            <p style="font-size:0.82rem;color:var(--text-muted);"><i class="fa-regular fa-id-card me-2"></i>CI: {{ reserva.cliente.cedula }}</p>
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);"><i class="fa-regular fa-id-card me-2"></i>CI: {{ reserva.cliente.cedula }}</p>
             {% endif %}
             {% if reserva.observaciones %}
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border-subtle);">
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--color-border);">
                 <i class="fa-regular fa-note-sticky me-2"></i>{{ reserva.observaciones }}
             </p>
             {% endif %}
@@ -47,42 +47,42 @@
         <div class="admin-card">
             <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Fecha y Servicios</h5>
             <p style="font-size:0.95rem;font-weight:600;">{{ reserva.fecha.strftime('%A %d de %B de %Y') | capitalize }}</p>
-            <p style="font-size:0.9rem;color:var(--accent);font-weight:700;">
+            <p style="font-size:0.9rem;color:var(--color-brand);font-weight:700;">
                 {{ reserva.hora_inicio.strftime('%H:%M') }} hs
                 {% if reserva.hora_fin %}
-                <span style="color:var(--text-muted);">→ {{ reserva.hora_fin.strftime('%H:%M') }} hs</span>
+                <span style="color:var(--color-text-secondary);">→ {{ reserva.hora_fin.strftime('%H:%M') }} hs</span>
                 {% endif %}
             </p>
             {% if reserva.duracion_total_min %}
-            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">
+            <p style="font-size:0.8rem;color:var(--color-text-secondary);margin-top:0.25rem;">
                 <i class="fa-regular fa-clock me-1"></i>Duracion estimada: {{ reserva.duracion_total_min }} min
             </p>
             {% endif %}
             {% if reserva.fecha_fin and reserva.fecha_fin != reserva.fecha %}
-            <p style="font-size:0.8rem;color:var(--accent);margin-top:0.25rem;">
+            <p style="font-size:0.8rem;color:var(--color-brand);margin-top:0.25rem;">
                 <i class="fa-regular fa-calendar-days me-1"></i>Finaliza: {{ reserva.fecha_fin.strftime('%d/%m/%Y') }}
             </p>
             {% endif %}
-            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border-subtle);">
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--color-border);">
                 {% if reserva.categoria_servicio %}
-                <span class="badge-estado" style="background:rgba(26,107,255,0.1);color:var(--accent);border:1px solid rgba(26,107,255,0.2);margin:0.15rem;">{{ reserva.categoria_servicio.nombre }}</span>
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.categoria_servicio.nombre }}</span>
                 {% endif %}
                 {% if reserva.tipo_lavado %}
-                <span class="badge-estado" style="background:rgba(255,193,7,0.1);color:#ffc107;border:1px solid rgba(255,193,7,0.2);margin:0.15rem;">{{ reserva.tipo_lavado.nombre }}</span>
+                <span class="badge-estado badge-warning" style="margin:0.15rem;">{{ reserva.tipo_lavado.nombre }}</span>
                 {% endif %}
                 {% if reserva.subtipo_lavado %}
-                <span class="badge-estado" style="background:rgba(13,202,240,0.1);color:#0dcaf0;border:1px solid rgba(13,202,240,0.2);margin:0.15rem;">{{ reserva.subtipo_lavado.nombre }}</span>
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.subtipo_lavado.nombre }}</span>
                 {% endif %}
                 {% if reserva.tipo_detallado %}
-                <span class="badge-estado" style="background:rgba(13,110,253,0.1);color:#0d6efd;border:1px solid rgba(13,110,253,0.2);margin:0.15rem;">{{ reserva.tipo_detallado.nombre }}</span>
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.tipo_detallado.nombre }}</span>
                 {% endif %}
 
                 {% if reserva.items %}
                 <div style="margin-top:0.5rem;">
                     {% for item in reserva.items %}
-                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:0.2rem 0;color:var(--text-light);">
+                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:0.2rem 0;color:var(--color-text-secondary);">
                         <span>{{ item.descripcion or item.tipo_item }}</span>
-                        <span style="color:var(--accent);">
+                        <span style="color:var(--color-brand);">
                             {% if item.precio_aplicado is not none and item.precio_aplicado != 0 %}
                             Gs {{ item.precio_aplicado | int | thousandsep }}
                             {% endif %}
@@ -103,14 +103,14 @@
             {% set v = reserva.vehiculos.first() %}
             {% if v %}
             <div class="row g-2">
-                <div class="col-6"><span style="color:var(--text-muted);font-size:0.78rem;">Marca</span><p style="font-size:0.9rem;font-weight:600;">{{ v.marca }}</p></div>
-                <div class="col-6"><span style="color:var(--text-muted);font-size:0.78rem;">Modelo</span><p style="font-size:0.9rem;font-weight:600;">{{ v.modelo }}</p></div>
-                <div class="col-4"><span style="color:var(--text-muted);font-size:0.78rem;">Anio</span><p style="font-size:0.85rem;">{{ v.anio or '--' }}</p></div>
-                <div class="col-4"><span style="color:var(--text-muted);font-size:0.78rem;">Color</span><p style="font-size:0.85rem;">{{ v.color or '--' }}</p></div>
-                <div class="col-4"><span style="color:var(--text-muted);font-size:0.78rem;">Tipo</span><p style="font-size:0.85rem;">{{ v.tipo_vehiculo }}</p></div>
+                <div class="col-6"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Marca</span><p style="font-size:0.9rem;font-weight:600;">{{ v.marca }}</p></div>
+                <div class="col-6"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Modelo</span><p style="font-size:0.9rem;font-weight:600;">{{ v.modelo }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Anio</span><p style="font-size:0.85rem;">{{ v.anio or '--' }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Color</span><p style="font-size:0.85rem;">{{ v.color or '--' }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Tipo</span><p style="font-size:0.85rem;">{{ v.tipo_vehiculo }}</p></div>
             </div>
             {% if v.tipo_vehiculo_rel %}
-            <p style="font-size:0.78rem;color:var(--accent);margin-top:0.5rem;">{{ v.tipo_vehiculo_rel.nombre }}</p>
+            <p style="font-size:0.78rem;color:var(--color-brand);margin-top:0.5rem;">{{ v.tipo_vehiculo_rel.nombre }}</p>
             {% endif %}
             {% else %}
             <p class="text-muted-custom">Sin datos de vehiculo.</p>
@@ -124,14 +124,14 @@
             <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Asignacion y Precio</h5>
 
             <div style="margin-bottom:0.75rem;">
-                <span style="color:var(--text-muted);font-size:0.78rem;">Empleado asignado</span>
+                <span style="color:var(--color-text-secondary);font-size:0.78rem;">Empleado asignado</span>
                 <p style="font-size:0.9rem;font-weight:600;">{{ reserva.asignado_a.nombre if reserva.asignado_a else 'No asignado' }}</p>
             </div>
 
             <div class="row g-2">
                 <div class="col-6">
-                    <span style="color:var(--text-muted);font-size:0.78rem;">Precio</span>
-                    <p style="font-size:0.9rem;font-weight:700;color:var(--accent);">
+                    <span style="color:var(--color-text-secondary);font-size:0.78rem;">Precio</span>
+                    <p style="font-size:0.9rem;font-weight:700;color:var(--color-brand);">
                         {% if reserva.requiere_inspeccion %}
                         Gs {{ (reserva.precio_estimado or 0) | int | thousandsep }} <small style="color:var(--warning);font-size:0.7rem;">(estimado)</small>
                         {% else %}
@@ -140,13 +140,13 @@
                     </p>
                 </div>
                 <div class="col-6">
-                    <span style="color:var(--text-muted);font-size:0.78rem;">Tiempo</span>
+                    <span style="color:var(--color-text-secondary);font-size:0.78rem;">Tiempo</span>
                     <p style="font-size:0.9rem;font-weight:600;">{{ reserva.duracion_total_min }} min</p>
                 </div>
             </div>
 
             {% if reserva.requiere_inspeccion %}
-            <div style="margin-top:0.75rem;padding:0.6rem;background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:6px;font-size:0.75rem;color:#f0c040;">
+            <div class="note note-warning" style="margin-top:0.75rem;">
                 <i class="fa-solid fa-triangle-exclamation me-1"></i> Requiere inspeccion. El precio final puede variar.
             </div>
             {% endif %}
@@ -193,7 +193,7 @@
     <!-- Fechas de creacion -->
     <div class="col-12">
         <div class="admin-card">
-            <div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.8rem;color:var(--text-muted);">
+            <div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.8rem;color:var(--color-text-secondary);">
                 <span>Creado: {{ reserva.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
                 <span>Actualizado: {{ reserva.updated_at.strftime('%d/%m/%Y %H:%M') }}</span>
                 <span style="margin-left:auto;">
@@ -211,8 +211,8 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion</h6></div>
-            <div class="modal-body" style="font-size:0.85rem;color:var(--text-muted);">
-                Estas seguro de eliminar la reserva <strong style="color:var(--white);">#{{ reserva.id }}</strong>?
+            <div class="modal-body" style="font-size:0.85rem;color:var(--color-text-secondary);">
+                Estas seguro de eliminar la reserva <strong style="color:var(--color-text-primary);">#{{ reserva.id }}</strong>?
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>

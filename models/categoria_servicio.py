@@ -1,21 +1,17 @@
 from extensions import db
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 
 class CategoriaServicio(db.Model):
     __tablename__ = 'categorias_servicio'
 
-    id                    = db.Column(db.Integer, primary_key=True)
-    nombre                = db.Column(db.String(60), nullable=False, unique=True)
-    slug                  = db.Column(db.String(60), nullable=False, unique=True)
-    descripcion           = db.Column(db.Text, nullable=True)
-    icono                 = db.Column(db.String(60), nullable=True)
-    orden                 = db.Column(db.Integer, nullable=False, default=0)
-    usa_nivel_suciedad    = db.Column(db.Boolean, default=False)
-    permite_multidias     = db.Column(db.Boolean, default=False)
-    tiene_subtipos        = db.Column(db.Boolean, default=False)
-    activo                = db.Column(db.Boolean, default=True)
-    created_at            = db.Column(db.DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(db.String(40), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(db.String(40), unique=True, nullable=False)
+    orden: Mapped[int] = mapped_column(db.SmallInteger, default=0, nullable=False)
+
+    servicios: Mapped[List['Servicio']] = relationship(back_populates='categoria')
 
     def __repr__(self):
         return f'<CategoriaServicio {self.nombre}>'

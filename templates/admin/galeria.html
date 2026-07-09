@@ -13,8 +13,8 @@
     .galeria-admin-grid.two    { grid-template-columns: repeat(2, 1fr); max-width: 600px; }
     .galeria-admin-grid.three  { grid-template-columns: repeat(3, 1fr); max-width: 660px; }
     .galeria-admin-card {
-        background: var(--bg-primary);
-        border: 1px solid var(--border-subtle);
+        background: var(--color-bg-0);
+        border: 1px solid var(--color-border);
         border-radius: 8px;
         overflow: hidden;
         position: relative;
@@ -65,22 +65,22 @@
         text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.72rem;
     }
     .galeria-admin-categoria .cat-count {
-        color: var(--text-muted); font-size: 0.65rem; font-weight: 600;
-        background: var(--bg-card); padding: 0.1rem 0.45rem; border-radius: 20px;
+        color: var(--color-text-secondary); font-size: 0.65rem; font-weight: 600;
+        background: var(--color-bg-1); padding: 0.1rem 0.45rem; border-radius: 20px;
     }
     .drop-area {
-        border: 2px dashed var(--border-subtle);
+        border: 2px dashed var(--color-border);
         border-radius: 10px;
         padding: 1rem;
         text-align: center;
-        color: var(--text-muted);
+        color: var(--color-text-secondary);
         cursor: pointer;
         transition: 0.2s;
         font-size: 0.8rem;
     }
     .drop-area:hover, .drop-area.dragover {
-        border-color: var(--accent);
-        color: var(--accent);
+        border-color: var(--color-brand);
+        color: var(--color-brand);
         background: rgba(26,107,255,0.05);
     }
     .preview-thumbs {
@@ -88,10 +88,10 @@
     }
     .preview-thumbs img {
         width: 48px; height: 48px; object-fit: cover; border-radius: 5px;
-        border: 1px solid var(--border-subtle);
+        border: 1px solid var(--color-border);
     }
     .empty-cats {
-        text-align: center; padding: 1.25rem; color: var(--text-muted); font-size: 0.82rem;
+        text-align: center; padding: 1.25rem; color: var(--color-text-secondary); font-size: 0.82rem;
     }
     .cat-panel {
         display: grid;
@@ -99,8 +99,8 @@
         gap: 0.35rem;
     }
     .cat-chip {
-        background: var(--bg-primary);
-        border: 1px solid var(--border-subtle);
+        background: var(--color-bg-0);
+        border: 1px solid var(--color-border);
         border-radius: 7px;
         padding: 0.3rem 0.5rem;
         display: flex;
@@ -109,19 +109,19 @@
         gap: 0.3rem;
     }
     .cat-chip .cat-name { font-weight: 600; font-size: 0.74rem; }
-    .cat-chip .cat-meta { font-size: 0.63rem; color: var(--text-muted); }
-    .cat-chip.inactive .cat-name { color: var(--text-muted); }
+    .cat-chip .cat-meta { font-size: 0.63rem; color: var(--color-text-secondary); }
+    .cat-chip.inactive .cat-name { color: var(--color-text-secondary); }
     .cat-chip .cat-actions { display: flex; gap: 0.12rem; align-items: center; }
     .cat-chip .mini-btn {
-        background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted);
+        background: transparent; border: 1px solid var(--color-border); color: var(--color-text-secondary);
         border-radius: 4px; width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem;
         display: flex; align-items: center; justify-content: center; transition: 0.2s;
     }
-    .cat-chip .mini-btn:hover { color: var(--accent); border-color: var(--accent); }
-    .cat-chip .mini-btn.danger:hover { color: #dc3545; border-color: #dc3545; }
+    .cat-chip .mini-btn:hover { color: var(--color-brand); border-color: var(--color-brand); }
+    .cat-chip .mini-btn.danger:hover { color: var(--color-danger); border-color: var(--color-danger); }
     .section-label {
         font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px;
-        color: var(--text-muted); font-weight: 700; margin: 0 0 0.25rem 0;
+        color: var(--color-text-secondary); font-weight: 700; margin: 0 0 0.25rem 0;
     }
     .section-label .muted { font-weight: 500; text-transform: none; letter-spacing: 0; }
     .gallery-admin-card-compact { padding: 0.8rem !important; height: auto !important; }
@@ -184,7 +184,7 @@
 {% for cat, items in grupos.items() %}
 <div class="admin-card gallery-admin-card-compact galeria-admin-categoria" data-categoria="{{ cat.nombre }}">
     <h6>
-        <i class="fa-regular fa-images" style="color:var(--accent);"></i>
+        <i class="fa-regular fa-images" style="color:var(--color-brand);"></i>
         {{ cat.nombre }}
         <span class="cat-count">{{ items|length }} img</span>
     </h6>
@@ -194,9 +194,9 @@
             <span class="badge-count">#{{ loop.index }}</span>
             <img src="{{ it.url_thumb or it.url_imagen }}" alt="{{ it.titulo }}" loading="lazy"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22140%22><rect fill=%22%23222%22 width=%22180%22 height=%22140%22/></svg>'">
-            <div style="padding:0.22rem 0.4rem;font-size:0.68rem;color:var(--text-muted);">
+            <div style="padding:0.22rem 0.4rem;font-size:0.68rem;color:var(--color-text-secondary);">
                 {{ it.titulo }}
-                {% if not it.activo %}<span style="color:#dc3545;">(inactivo)</span>{% endif %}
+                {% if not it.activo %}<span style="color:var(--color-danger);">(inactivo)</span>{% endif %}
             </div>
             <div class="acciones">
                 <div class="orden-btns">
@@ -245,7 +245,7 @@
                         <label class="form-label">Nombre de la categoría *</label>
                         <input type="text" class="form-control" name="nombre" id="cat_nombre" required maxlength="120"
                                placeholder="Ej: Antes y Después"
-                               style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);">
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
                     </div>
                     <div>
                         <label class="form-check-label" style="font-size:0.85rem;">
@@ -277,23 +277,23 @@
                     <div class="mb-3">
                         <label class="form-label">Categoría *</label>
                         <select class="form-control" name="categoria_id" id="crear_categoria_id" required
-                                style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);">
+                                style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
                             <option value="">— Seleccioná una categoría —</option>
                             {% for c in categorias %}
                             <option value="{{ c.id }}">{{ c.nombre }}{% if not c.activo %} (inactiva){% endif %}</option>
                             {% endfor %}
                         </select>
-                        <small style="color:var(--text-muted);font-size:0.75rem;">¿No ves la categoría? Cerrá y usá <strong>Nueva Categoría</strong>.</small>
+                        <small style="color:var(--color-text-secondary);font-size:0.75rem;">¿No ves la categoría? Cerrá y usá <strong>Nueva Categoría</strong>.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Título (opcional, se aplica a todas)</label>
                         <input type="text" class="form-control" name="titulo" id="crear_titulo"
-                               style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);">
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descripción (opcional)</label>
                         <textarea class="form-control" name="descripcion" rows="2"
-                                  style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);"></textarea>
+                                  style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Imágenes *</label>
@@ -335,7 +335,7 @@
                     <div class="mb-3">
                         <label class="form-label">Categoría *</label>
                         <select class="form-control" name="categoria_id" id="editar_categoria_id" required
-                                style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);">
+                                style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
                             {% for c in categorias %}
                             <option value="{{ c.id }}">{{ c.nombre }}{% if not c.activo %} (inactiva){% endif %}</option>
                             {% endfor %}
@@ -344,17 +344,17 @@
                     <div class="mb-3">
                         <label class="form-label">Título</label>
                         <input type="text" class="form-control" name="titulo" id="editar_titulo"
-                               style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);">
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
                         <textarea class="form-control" name="descripcion" id="editar_descripcion" rows="2"
-                                  style="background:var(--bg-primary);border-color:var(--border-subtle);color:var(--white);"></textarea>
+                                  style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Reemplazar imagen (opcional)</label>
                         <input type="file" name="imagen" accept="image/*"
-                               style="font-size:0.8rem;color:var(--text-muted);">
+                               style="font-size:0.8rem;color:var(--color-text-secondary);">
                     </div>
                     <div>
                         <label class="form-check-label" style="font-size:0.85rem;">

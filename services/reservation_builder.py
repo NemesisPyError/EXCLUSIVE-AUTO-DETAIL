@@ -1,274 +1,309 @@
+import secrets
+from datetime import datetime, timedelta, timezone, date as date_type, time as time_type
 from extensions import db
 from models.cliente import Cliente
 from models.vehiculo import Vehiculo
-from models.reserva import Reserva, ReservaServicio
+from models.reserva import Reserva
+from models.reserva_adicional import ReservaAdicional
+from models.solicitud_catalogo import SolicitudCatalogo
 from models.servicio import Servicio
 from models.estado_reserva import EstadoReserva
-from models.factor_tiempo import FactorTiempo, ReservaFactorTiempo
-from models.tipo_vehiculo import TipoVehiculo
-from models.categoria_servicio import CategoriaServicio
-from models.tipo_lavado import TipoLavado
-from models.subtipo_lavado import SubTipoLavado
-from models.tipo_detallado import TipoDetallado
-from models.reserva_item import ReservaItem
-from services.validaciones import (
-    validar_telefono_paraguay,
-    validar_fecha_futura,
-    validar_disponibilidad_por_rango,
-)
-from services.duracion import CalculadorDuracion, PlanificadorOcupacion
+from models.nivel_suciedad import NivelSuciedad
 from services.pricing_service import PricingEngine
-from services.security_service import log_error
-from datetime import datetime
-import secrets
-import re
+from services.duracion import CalculadorDuracion, PlanificadorOcupacion
+from services.validaciones import (
+    validar_telefono_py, validar_fecha_futura,
+    validar_dentro_horario, validar_disponibilidad,
+)
+
+
+class ReservationValidationError(ValueError):
+    pass
 
 
 class ReservationBuilder:
 
-    @staticmethod
-    def build_reservation(data):
-        if not data:
-            return False, {'error': 'Datos JSON requeridos.'}, 400
+    @classmethod
+    def build_reservation(cls, data):
+        if isinstance(data.get('fecha'), str):
+            data['fecha'] = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+        if isinstance(data.get('hora_inicio'), str):
+            data['hora_inicio'] = datetime.strptime(data['hora_inicio'], '%H:%M').time()
 
-        nombre = (data.get('nombre') or '').strip()
-        apellido = (data.get('apellido') or '').strip()
-        cedula = (data.get('cedula') or '').strip()
-        telefono = (data.get('telefono') or '').strip()
-        tipo_vehiculo_slug = (data.get('tipo_vehiculo_slug') or '').strip()
-        tipo_vehiculo_nombre = (data.get('tipo_vehiculo') or '').strip()
-        marca = (data.get('marca') or '').strip()
-        modelo = (data.get('modelo') or '').strip()
-        categoria_slug = (data.get('categoria_slug') or '').strip()
-        tipo_lavado_slug = (data.get('tipo_lavado_slug') or '').strip() or None
-        subtipo_slug = (data.get('subtipo_slug') or '').strip() or None
-        tipo_detallado_slug = (data.get('tipo_detallado_slug') or '').strip() or None
-        servicio_ids = data.get('servicio_ids') or []
-        factor_ids = data.get('factor_ids') or []
-        fecha_str = (data.get('fecha') or '').strip()
-        hora_str = (data.get('hora') or '').strip()
-        fecha_fin_str = (data.get('fecha_fin') or '').strip() or None
-        dias_bloqueo = data.get('dias_bloqueo')
-
-        errores = []
-
-        if not nombre:
-            errores.append({'campo': 'nombre', 'error': 'El nombre es obligatorio.'})
-        if not apellido:
-            errores.append({'campo': 'apellido', 'error': 'El apellido es obligatorio.'})
-
-        if not cedula:
-            errores.append({'campo': 'cedula', 'error': 'El numero de cedula es obligatorio.'})
-        elif not re.fullmatch(r'[A-Z0-9.\-]{5,20}', cedula, re.IGNORECASE):
-            errores.append({'campo': 'cedula', 'error': 'Formato de cedula invalido. Use solo numeros, puntos o guiones (5-20 caracteres).'})
-
-        if not telefono:
-            errores.append({'campo': 'telefono', 'error': 'El telefono es obligatorio.'})
-        elif not validar_telefono_paraguay(telefono):
-            errores.append({'campo': 'telefono', 'error': 'Formato de telefono invalido. Use +5959XXXXXXXX o 09XXXXXXXX.'})
-
-        if not marca:
-            errores.append({'campo': 'marca', 'error': 'La marca es obligatoria.'})
-        if not modelo:
-            errores.append({'campo': 'modelo', 'error': 'El modelo es obligatorio.'})
-
-        if not tipo_vehiculo_slug:
-            errores.append({'campo': 'tipo_vehiculo', 'error': 'El tipo de vehiculo es obligatorio.'})
-        else:
-            vehiculo_tipo = TipoVehiculo.query.filter_by(slug=tipo_vehiculo_slug, activo=True).first()
-            if not vehiculo_tipo:
-                errores.append({'campo': 'tipo_vehiculo', 'error': 'Tipo de vehiculo no valido.'})
-
-        if not categoria_slug:
-            errores.append({'campo': 'categoria', 'error': 'La categoria de servicio es obligatoria.'})
-        else:
-            categoria = CategoriaServicio.query.filter_by(slug=categoria_slug, activo=True).first()
-            if not categoria:
-                errores.append({'campo': 'categoria', 'error': 'Categoria de servicio no valida.'})
-
-        if not fecha_str:
-            errores.append({'campo': 'fecha', 'error': 'La fecha es obligatoria.'})
-        else:
-            try:
-                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                if not validar_fecha_futura(fecha):
-                    errores.append({'campo': 'fecha', 'error': 'La fecha debe ser hoy o futura.'})
-            except (ValueError, TypeError):
-                errores.append({'campo': 'fecha', 'error': 'Formato de fecha invalido. Use YYYY-MM-DD.'})
-                fecha = None
-
-        if not hora_str:
-            errores.append({'campo': 'hora', 'error': 'La hora es obligatoria.'})
-        else:
-            try:
-                hora = datetime.strptime(hora_str, '%H:%M').time()
-            except (ValueError, TypeError):
-                errores.append({'campo': 'hora', 'error': 'Formato de hora invalido. Use HH:MM.'})
-                hora = None
-
-        if errores:
-            return False, {'errores': errores}, 422
-
-        precio_data, _ = PricingEngine.obtener_precio(
-            vehiculo_slug=tipo_vehiculo_slug,
-            categoria_slug=categoria_slug,
-            tipo_lavado_slug=tipo_lavado_slug,
-            subtipo_slug=subtipo_slug,
-            tipo_detallado_slug=tipo_detallado_slug,
-        )
-
-        if precio_data is None:
-            return False, {
-                'errores': [{'campo': 'servicio', 'error': 'No se encontro precio para esta combinacion de vehiculo y servicio.'}],
-            }, 409
-
-        duracion_total = precio_data['tiempo_estimado_min']
-
-        if factor_ids:
-            duracion_total += CalculadorDuracion.calcular([], factor_ids)
-
-        if servicio_ids:
-            duracion_total += CalculadorDuracion.calcular(servicio_ids, [])
+        errors = cls._validate_input(data)
+        if errors:
+            raise ReservationValidationError(errors)
 
         try:
-            Reserva.query.filter(
-                Reserva.fecha == fecha
-            ).with_for_update().all()
+            cliente = cls._get_or_create_cliente(data)
+            vehiculo = cls._get_or_create_vehiculo(data, cliente)
+            servicio = db.session.get(Servicio, data['servicio_id'])
+            if not servicio:
+                raise ReservationValidationError({'servicio_id': 'Servicio no encontrado.'})
 
-            disponible, error_msg = validar_disponibilidad_por_rango(
-                fecha, hora, duracion_total, lock_rows=True
+            nivel_suciedad = db.session.get(NivelSuciedad, data['nivel_suciedad_id'])
+            if not nivel_suciedad:
+                raise ReservationValidationError({'nivel_suciedad_id': 'Nivel de suciedad no valido.'})
+
+            estado = EstadoReserva.query.filter_by(nombre='Pendiente').first()
+            if not estado:
+                raise ReservationValidationError({'estado': 'Estado Pendiente no encontrado.'})
+
+            duracion = CalculadorDuracion.calcular_duracion(
+                servicio.id,
+                vehiculo.tipo_vehiculo_id,
+                vehiculo.segmento_id,
+                nivel_suciedad.id,
+                data.get('adicionales_ids', []),
             )
-            if not disponible:
-                db.session.rollback()
-                return False, {
-                    'errores': [
-                        {'campo': 'hora', 'error': error_msg or 'Horario no disponible.'}
-                    ],
-                }, 409
 
-            hora_fin = CalculadorDuracion.calcular_hora_fin(hora, duracion_total)
+            fecha = data['fecha']
+            hora_inicio = data['hora_inicio']
+            dia_semana = fecha.isoweekday()
 
-            # Para servicios detallados (>3h) calcular entrega considerando
-            # varios dias habiles
+            ok, msg = validar_dentro_horario(dia_semana, hora_inicio, duracion)
+            if not ok:
+                raise ReservationValidationError({'horario': msg})
+
+            precio = PricingEngine.obtener_precio(
+                servicio.id,
+                vehiculo.tipo_vehiculo_id,
+                vehiculo.segmento_id,
+                nivel_suciedad.id,
+            )
+            if not precio:
+                raise ReservationValidationError({'precio': 'No hay precio configurado.'})
+
+            precio_base = precio['precio']
+            precio_adicionales = 0
+            adicionales_precios = {}
+
+            if data.get('adicionales_ids'):
+                for ad_id in data['adicionales_ids']:
+                    ad_precio = PricingEngine.obtener_precio(
+                        ad_id, vehiculo.tipo_vehiculo_id,
+                        vehiculo.segmento_id, nivel_suciedad.id,
+                    )
+                    adicionales_precios[ad_id] = ad_precio
+                    if ad_precio:
+                        precio_adicionales += ad_precio['precio']
+
+            box_id = cls._asignar_box_atomico(
+                vehiculo.tipo_vehiculo_id, fecha, hora_inicio, duracion
+            )
+            if box_id is None:
+                raise ReservationValidationError({'disponibilidad': 'No hay box disponible en ese horario.'})
+
             fecha_entrega = fecha
-            hora_entrega = hora_fin
-            if PlanificadorOcupacion.clasificar_servicio(duracion_total) == 'detallado':
-                fe, he, _ = PlanificadorOcupacion.calcular_entrega(
-                    fecha, hora, duracion_total
-                )
-                if fe and he:
-                    fecha_entrega = fe
-                    hora_entrega = he
-                    fecha_fin = fe
+            if servicio.requiere_varios_dias and servicio.dias_bloqueo:
+                fecha_entrega = fecha + timedelta(days=servicio.dias_bloqueo - 1)
 
-            fecha_fin = fecha_entrega if fecha_entrega != fecha else None
-
-            cliente = Cliente(
-                nombre=nombre,
-                apellido=apellido,
-                cedula=cedula,
-                telefono=telefono,
-                email=None,
-            )
-            db.session.add(cliente)
-            db.session.flush()
-
-            estado_pendiente = EstadoReserva.query.filter_by(
-                nombre='Pendiente'
-            ).first()
-            if not estado_pendiente:
-                return False, {'error': 'Estado Pendiente no encontrado.'}, 500
-
-            es_estimado = precio_data.get('es_precio_estimado', False)
-            precio_valor = (
-                precio_data.get('precio_estimado') if es_estimado
-                else precio_data.get('precio_fijo')
-            )
+            confirmacion_token = secrets.token_urlsafe(32)
 
             reserva = Reserva(
                 cliente_id=cliente.id,
-                estado_id=estado_pendiente.id,
+                vehiculo_id=vehiculo.id,
+                servicio_id=servicio.id,
+                estado_reserva_id=estado.id,
+                nivel_suciedad_id=nivel_suciedad.id,
+                box_id=box_id,
                 fecha=fecha,
-                hora_inicio=hora,
-                duracion_total_min=duracion_total,
-                hora_fin=hora_entrega,
-                fecha_fin=fecha_fin,
-                dias_bloqueo=precio_data.get('dias_bloqueo') or 0,
-                categoria_servicio_id=categoria.id,
-                tipo_lavado_id=TipoLavado.query.filter_by(slug=tipo_lavado_slug).first().id if tipo_lavado_slug else None,
-                subtipo_lavado_id=SubTipoLavado.query.filter_by(slug=subtipo_slug).first().id if subtipo_slug else None,
-                tipo_detallado_id=TipoDetallado.query.filter_by(slug=tipo_detallado_slug).first().id if tipo_detallado_slug else None,
-                requiere_inspeccion=es_estimado,
-                precio_estimado=precio_data.get('precio_estimado'),
-                precio_final=precio_data.get('precio_fijo') if not es_estimado else None,
-                observaciones=data.get('observaciones', ''),
+                hora_inicio=hora_inicio,
+                duracion_total_min=duracion,
+                fecha_entrega_estimada=fecha_entrega,
+                precio_estimado_base=precio_base,
+                precio_estimado_adicionales=precio_adicionales,
+                confirmacion_token=confirmacion_token,
             )
+
             db.session.add(reserva)
             db.session.flush()
 
-            token = secrets.token_urlsafe(32)
-            reserva.confirmacion_token = token
+            if data.get('adicionales_ids'):
+                for ad_id in data['adicionales_ids']:
+                    ad_servicio = db.session.get(Servicio, ad_id)
+                    if not ad_servicio or ad_servicio.tipo != 'adicional':
+                        continue
+                    ad_precio = adicionales_precios.get(ad_id)
+                    db.session.add(ReservaAdicional(
+                        reserva_id=reserva.id,
+                        servicio_id=ad_id,
+                        precio_aplicado=ad_precio['precio'] if ad_precio else 0,
+                        tiempo_aplicado_min=ad_precio['duracion_minutos'] if ad_precio else 0,
+                    ))
 
-            vehiculo = Vehiculo(
-                reserva_id=reserva.id,
-                tipo_vehiculo=tipo_vehiculo_nombre or tipo_vehiculo_slug,
-                tipo_vehiculo_id=vehiculo_tipo.id,
-                marca=marca,
-                modelo=modelo,
-                anio=data.get('anio'),
-                color=data.get('color'),
-                nivel_suciedad=(tipo_lavado_slug or ''),
-            )
-            db.session.add(vehiculo)
-
-            item_desc = precio_data.get('descripcion_publica') or (
-                f'{categoria.nombre}' +
-                (f' {tipo_lavado_slug}' if tipo_lavado_slug else '') +
-                (f' {subtipo_slug}' if subtipo_slug else '') +
-                (f' {tipo_detallado_slug}' if tipo_detallado_slug else '')
-            )
-            db.session.add(ReservaItem(
-                reserva_id=reserva.id,
-                tipo_item=categoria.slug,
-                regla_precio_id=precio_data.get('regla_id'),
-                precio_aplicado=precio_valor,
-                tiempo_aplicado_min=precio_data['tiempo_estimado_min'],
-                descripcion=item_desc,
-            ))
-
-            if servicio_ids:
-                servicios_activos = Servicio.query.filter(
-                    Servicio.id.in_(servicio_ids),
-                    Servicio.activo.is_(True),
-                ).all()
-                servicios_map = {s.id: s for s in servicios_activos}
-                for sid in servicio_ids:
-                    srv = servicios_map.get(sid)
-                    if srv:
-                        db.session.add(ReservaServicio(reserva_id=reserva.id, servicio_id=sid))
-                        db.session.add(ReservaItem(
-                            reserva_id=reserva.id,
-                            tipo_item='tratamiento',
-                            servicio_id=sid,
-                            precio_aplicado=float(srv.precio),
-                            tiempo_aplicado_min=srv.tiempo_estimado_min,
-                            descripcion=srv.nombre,
-                        ))
-
-            if factor_ids:
-                factores_activos = FactorTiempo.query.filter(
-                    FactorTiempo.id.in_(factor_ids),
-                    FactorTiempo.activo.is_(True),
-                ).all()
-                factores_map = {f.id for f in factores_activos}
-                for fid in factor_ids:
-                    if fid in factores_map:
-                        db.session.add(ReservaFactorTiempo(reserva_id=reserva.id, factor_tiempo_id=fid))
+            if vehiculo.modelo_id is None and vehiculo.marca_texto:
+                solicitud_existente = (
+                    db.session.query(SolicitudCatalogo)
+                    .filter_by(
+                        marca_texto=vehiculo.marca_texto,
+                        modelo_texto=vehiculo.modelo_texto,
+                        estado='pendiente',
+                    )
+                    .first()
+                )
+                if not solicitud_existente:
+                    db.session.add(SolicitudCatalogo(
+                        marca_texto=vehiculo.marca_texto,
+                        modelo_texto=vehiculo.modelo_texto,
+                        tipo_vehiculo_id=vehiculo.tipo_vehiculo_id,
+                        segmento_id=vehiculo.segmento_id,
+                        cliente_id=cliente.id,
+                        vehiculo_id=vehiculo.id,
+                        estado='pendiente',
+                    ))
 
             db.session.commit()
-            return True, {'reserva_id': reserva.id, 'confirmacion_token': token}, 201
+            return reserva
 
-        except Exception as e:
+        except ReservationValidationError:
             db.session.rollback()
-            log_error('/reservas/crear', str(e))
-            return False, {'error': 'Ocurrio un error al procesar la reserva. Intente nuevamente.'}, 500
+            raise
+        except Exception:
+            db.session.rollback()
+            raise
+
+    @classmethod
+    def _asignar_box_atomico(cls, tipo_vehiculo_id, fecha, hora_inicio, duracion_min):
+        boxes = PlanificadorOcupacion.boxes_disponibles(tipo_vehiculo_id)
+        if not boxes:
+            return None
+
+        inicio_min = PlanificadorOcupacion._hora_a_minutos(hora_inicio)
+        fin_min = inicio_min + duracion_min
+
+        for box in boxes:
+            existing = (
+                db.session.query(Reserva)
+                .filter(
+                    Reserva.box_id == box.id,
+                    Reserva.fecha == fecha,
+                    Reserva.deleted_at.is_(None),
+                )
+                .with_for_update()
+                .all()
+            )
+
+            ocupado = False
+            for r in existing:
+                r_inicio = PlanificadorOcupacion._hora_a_minutos(r.hora_inicio)
+                r_fin = r_inicio + r.duracion_total_min
+                if inicio_min < r_fin and fin_min > r_inicio:
+                    ocupado = True
+                    break
+
+            if not ocupado:
+                return box.id
+
+        return None
+
+    @classmethod
+    def _validate_input(cls, data):
+        errors = {}
+        if not data.get('servicio_id'):
+            errors['servicio_id'] = 'Debe seleccionar un servicio.'
+        if not data.get('nivel_suciedad_id'):
+            errors['nivel_suciedad_id'] = 'Debe seleccionar el nivel de suciedad.'
+        if not data.get('fecha'):
+            errors['fecha'] = 'Debe seleccionar una fecha.'
+        else:
+            ok, msg = validar_fecha_futura(data['fecha'])
+            if not ok:
+                errors['fecha'] = msg
+        if not data.get('hora_inicio'):
+            errors['hora_inicio'] = 'Debe seleccionar una hora.'
+        if not data.get('nombre') or not data.get('apellido'):
+            errors['cliente'] = 'Nombre y apellido son obligatorios.'
+        if data.get('telefono'):
+            ok, msg = validar_telefono_py(data['telefono'])
+            if not ok:
+                errors['telefono'] = msg
+        return errors
+
+    @classmethod
+    def _get_or_create_cliente(cls, data):
+        from sqlalchemy.exc import IntegrityError
+        telefono = data.get('telefono', '').strip()
+        if not telefono:
+            telefono = 'sin-telefono-' + datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')
+
+        cliente = Cliente.query.filter_by(telefono=telefono).first()
+        if not cliente:
+            try:
+                cliente = Cliente(
+                    nombre=data.get('nombre', '').strip(),
+                    apellido=data.get('apellido', '').strip(),
+                    telefono=telefono,
+                    cedula=data.get('cedula', '').strip() or None,
+                    email=data.get('email', '').strip() or None,
+                )
+                db.session.add(cliente)
+                db.session.flush()
+            except IntegrityError:
+                db.session.rollback()
+                cliente = Cliente.query.filter_by(telefono=telefono).first()
+                if not cliente:
+                    raise ReservationValidationError({'telefono': 'Error al crear el cliente. Intente de nuevo.'})
+        return cliente
+
+    @classmethod
+    def _get_or_create_vehiculo(cls, data, cliente):
+        if data.get('vehiculo_id'):
+            vehiculo = db.session.get(Vehiculo, data['vehiculo_id'])
+            if vehiculo and vehiculo.cliente_id == cliente.id:
+                return vehiculo
+
+        from models.marca import Marca
+        from models.modelo_vehiculo import ModeloVehiculo
+
+        marca_id = None
+        modelo_id = None
+        marca_texto = None
+        modelo_texto = None
+        tipo_vehiculo_id = data.get('tipo_vehiculo_id')
+        segmento_id = data.get('segmento_id')
+        anio = data.get('anio')
+
+        if data.get('modelo_id'):
+            modelo = db.session.get(ModeloVehiculo, data['modelo_id'])
+            if modelo:
+                modelo_id = modelo.id
+                marca_id = modelo.marca_id
+                if not tipo_vehiculo_id:
+                    tipo_vehiculo_id = modelo.tipo_vehiculo_id
+                if not segmento_id:
+                    segmento_id = modelo.segmento_id
+        else:
+            marca_texto = data.get('marca', '').strip()
+            modelo_texto = data.get('modelo', '').strip()
+            if not marca_texto:
+                marca_texto = 'No especificada'
+            if not modelo_texto:
+                modelo_texto = 'No especificado'
+
+            marca_existente = Marca.query.filter(
+                db.func.lower(Marca.nombre) == marca_texto.lower()
+            ).first()
+            if marca_existente:
+                marca_id = marca_existente.id
+
+        if not tipo_vehiculo_id or not segmento_id:
+            raise ReservationValidationError({'vehiculo': 'Tipo de vehiculo y segmento son obligatorios.'})
+
+        vehiculo = Vehiculo(
+            cliente_id=cliente.id,
+            marca_id=marca_id,
+            modelo_id=modelo_id,
+            marca_texto=marca_texto,
+            modelo_texto=modelo_texto,
+            tipo_vehiculo_id=tipo_vehiculo_id,
+            segmento_id=segmento_id,
+            anio=anio,
+            color=data.get('color', '').strip() or None,
+            chapa=data.get('chapa', '').strip() or None,
+            combustible=data.get('combustible', '').strip() or None,
+            transmision=data.get('transmision', '').strip() or None,
+        )
+        db.session.add(vehiculo)
+        db.session.flush()
+        return vehiculo

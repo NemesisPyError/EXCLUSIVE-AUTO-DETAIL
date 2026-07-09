@@ -147,7 +147,7 @@ def reset_password(token):
         flash('Enlace de recuperacion invalido o expirado.', 'danger')
         return redirect(url_for('auth.forgot_password'))
 
-    if user.reset_token_expiry and user.reset_token_expiry < datetime.utcnow():
+    if user.reset_token_expires and user.reset_token_expires < datetime.utcnow():
         user.clear_reset_token()
         db.session.commit()
         flash('El enlace de recuperacion ha expirado. Solicite uno nuevo.', 'danger')

@@ -26,62 +26,6 @@
     });
 
     // =============================================
-    // CAMBIO DE ESTADO (AJAX)
-    // Uso: <select class="estado-select" data-reserva="ID">
-    // =============================================
-    document.addEventListener('change', function (e) {
-        if (e.target.matches('.estado-select')) {
-            var reservaId = e.target.dataset.reserva;
-            var estadoId = parseInt(e.target.value);
-            cambiarEstadoReserva(reservaId, estadoId, e.target);
-        }
-    });
-
-    function cambiarEstadoReserva(reservaId, estadoId, selectEl) {
-        fetch('/admin/reservas/' + reservaId + '/estado', {
-            method: 'POST',
-            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ estado_id: estadoId })
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                var badge = selectEl.closest('tr').querySelector('.badge-estado');
-                if (badge) {
-                    var option = selectEl.options[selectEl.selectedIndex];
-                    badge.textContent = option.textContent;
-                }
-                showToast('Estado actualizado a "' + data.estado_nombre + '"', 'success');
-            } else {
-                showToast(data.error || 'Error al actualizar estado', 'danger');
-            }
-        })
-        .catch(function () {
-            showToast('Error de conexión', 'danger');
-        });
-    }
-
-    // =============================================
-    // TOGGLE ACTIVO/INACTIVO — Servicios
-    // Uso: <input class="toggle-servicio" data-id="ID">
-    // =============================================
-    document.addEventListener('change', function (e) {
-        if (e.target.matches('.toggle-servicio')) {
-            var id = e.target.dataset.id;
-            fetch('/admin/servicios/' + id + '/eliminar', {
-                method: 'POST',
-                headers: csrfHeaders({})
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data && !data.success) showToast(data.error || 'Error', 'danger');
-                    else setTimeout(function () { location.reload(); }, 300);
-                })
-                .catch(function () { showToast('Error de conexión', 'danger'); });
-        }
-    });
-
-    // =============================================
     // TOGGLE ACTIVO/INACTIVO — Horarios
     // =============================================
     document.addEventListener('change', function (e) {

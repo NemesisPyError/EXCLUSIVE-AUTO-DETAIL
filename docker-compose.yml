@@ -1,15 +1,3 @@
-# ================================================================
-# Exclusive Auto Detail — Docker Compose
-#
-# Producción: docker-compose up -d
-# Desarrollo: comentar redis y quitar redis de app.depends_on
-#
-# Requisitos previos:
-#   1. Crear .env desde .env.example y completar valores
-#   2. REDIS_URL=redis://redis:6379/0 (obligatorio en prod)
-#   3. Ejecutar seed: docker-compose exec app python seed.py
-# ================================================================
-
 services:
   app:
     build: .
@@ -18,25 +6,24 @@ services:
     env_file:
       - .env
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
 
-  mysql:
-    image: mysql:8.0
+  postgres:
+    image: postgres:16-alpine
     ports:
-      - "3307:3306"
+      - "5432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secure_password}
-      MYSQL_DATABASE: ${DB_NAME:-exclusive_autodetail}
-      MYSQL_USER: ${DB_USER:-exclusive_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secure_password}
+      POSTGRES_USER: ${DB_USER:-exclusive_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+      POSTGRES_DB: ${DB_NAME:-exclusive_autodetail}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-exclusive_user} -d ${DB_NAME:-exclusive_autodetail}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,5 +43,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  mysql_data:
+  postgres_data:
   redis_data:

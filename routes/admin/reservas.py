@@ -2,16 +2,20 @@ from flask import render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from extensions import db, limiter
 from decorators import role_required
-from models.reserva import Reserva, ReservaServicio
+from models.reserva import Reserva
 from models.estado_reserva import EstadoReserva
 from models.estado_cambio import EstadoCambio
 from models.cliente import Cliente
 from models.vehiculo import Vehiculo
-from models.factor_tiempo import ReservaFactorTiempo
+from models.servicio import Servicio
+from models.box import Box
+from models.reserva_adicional import ReservaAdicional
 from services.security_service import log_admin_action, log_error
+from services.estado_machine import EstadoMachine
 from services.whatsapp_service import normalize_phone, build_confirm_msg
 from datetime import datetime
 from urllib.parse import quote
+import traceback
 from routes.admin import admin_bp
 
 
@@ -27,12 +31,15 @@ def listar_reservas():
     query = Reserva.query.options(
         joinedload(Reserva.cliente),
         joinedload(Reserva.estado),
-        joinedload(Reserva.asignado_a),
-        joinedload(Reserva.categoria_servicio),
+        joinedload(Reserva.usuario_asignado),
+        joinedload(Reserva.servicio),
     )
 
     if filtro_estado:
-        query = query.filter(Reserva.estado_id == int(filtro_estado))
+        try:
+            query = query.filter(Reserva.estado_reserva_id == int(filtro_estado))
+        except (ValueError, TypeError):
+            pass
 
     if filtro_fecha:
         try:
@@ -74,8 +81,22 @@ def listar_reservas():
 @admin_bp.route('/reservas/<int:reserva_id>')
 @login_required
 def detalle_reserva(reserva_id):
+    from sqlalchemy.orm import joinedload
     from models.usuario import Usuario
-    reserva = Reserva.query.get_or_404(reserva_id)
+    reserva = (
+        Reserva.query
+        .options(
+            joinedload(Reserva.cliente),
+            joinedload(Reserva.estado),
+            joinedload(Reserva.servicio).joinedload(Servicio.categoria),
+            joinedload(Reserva.nivel_suciedad),
+            joinedload(Reserva.box).joinedload(Box.tipo_box),
+            joinedload(Reserva.vehiculo).joinedload(Vehiculo.tipo_vehiculo),
+            joinedload(Reserva.vehiculo).joinedload(Vehiculo.segmento),
+            joinedload(Reserva.adicionales).joinedload(ReservaAdicional.servicio),
+        )
+        .get_or_404(reserva_id)
+    )
     estados = EstadoReserva.query.order_by(EstadoReserva.orden).all()
     empleados = Usuario.query.filter_by(activo=True).order_by(Usuario.nombre).all()
 
@@ -102,14 +123,26 @@ def cambiar_estado(reserva_id):
     if not estado_id:
         return jsonify({'success': False, 'error': 'estado_id requerido.'}), 400
 
-    estado = EstadoReserva.query.get(estado_id)
+    try:
+        estado_id = int(estado_id)
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'error': 'estado_id invalido.'}), 400
+
+    estado = db.session.get(EstadoReserva, estado_id)
     if not estado:
         return jsonify({'success': False, 'error': 'Estado no existe.'}), 404
 
     reserva = Reserva.query.get_or_404(reserva_id)
-    estado_anterior_id = reserva.estado_id
-    reserva.estado_id = estado.id
-    db.session.commit()
+
+    if estado_id == reserva.estado_reserva_id:
+        return jsonify({'success': True, 'estado_nombre': estado.nombre, 'mensaje': 'Sin cambios.'})
+
+    ok, msg = EstadoMachine.validar_transicion(reserva.estado_reserva_id, estado_id)
+    if not ok:
+        return jsonify({'success': False, 'error': msg}), 400
+
+    estado_anterior_id = reserva.estado_reserva_id
+    reserva.estado_reserva_id = estado.id
 
     cambio = EstadoCambio(
         reserva_id=reserva.id,
@@ -138,7 +171,7 @@ def asignar_empleado(reserva_id):
     reserva = Reserva.query.get_or_404(reserva_id)
 
     if not empleado_id:
-        reserva.asignado_a_id = None
+        reserva.usuario_asignado_id = None
         db.session.commit()
         return jsonify({'success': True, 'empleado_nombre': 'Sin asignar', 'mensaje': 'Asignacion removida.'})
 
@@ -146,7 +179,7 @@ def asignar_empleado(reserva_id):
     if not empleado or not empleado.activo:
         return jsonify({'success': False, 'error': 'Empleado no encontrado o inactivo.'}), 404
 
-    reserva.asignado_a_id = empleado.id
+    reserva.usuario_asignado_id = empleado.id
     db.session.commit()
     log_admin_action(current_user.email, 'asignar_empleado', f'Reserva #{reserva_id} -> {empleado.nombre}')
     return jsonify({'success': True, 'empleado_nombre': empleado.nombre, 'mensaje': 'Empleado asignado.'})
@@ -156,7 +189,18 @@ def asignar_empleado(reserva_id):
 @login_required
 @role_required('admin')
 def editar_reserva(reserva_id):
-    reserva = Reserva.query.get_or_404(reserva_id)
+    from sqlalchemy.orm import joinedload
+    reserva = (
+        Reserva.query
+        .options(
+            joinedload(Reserva.cliente),
+            joinedload(Reserva.vehiculo),
+            joinedload(Reserva.servicio),
+            joinedload(Reserva.estado),
+            joinedload(Reserva.box),
+        )
+        .get_or_404(reserva_id)
+    )
 
     if request.method == 'GET':
         return render_template('admin/editar_reserva.html', reserva=reserva)
@@ -166,24 +210,27 @@ def editar_reserva(reserva_id):
         cliente = reserva.cliente
         cliente.nombre = data.get('nombre', cliente.nombre)
         cliente.apellido = data.get('apellido', cliente.apellido)
-        cliente.cedula = data.get('cedula', cliente.cedula) or cliente.cedula
+        cliente.cedula = data.get('cedula') or cliente.cedula
         cliente.telefono = data.get('telefono', cliente.telefono)
-        cliente.email = data.get('email', cliente.email)
+        cliente.email = data.get('email') or cliente.email
 
-        vehiculo = reserva.vehiculos.first()
+        vehiculo = reserva.vehiculo
         if vehiculo:
-            vehiculo.marca = data.get('marca', vehiculo.marca)
-            vehiculo.modelo = data.get('modelo', vehiculo.modelo)
-            vehiculo.anio = data.get('anio', vehiculo.anio) or None
+            vehiculo.marca_texto = data.get('marca', vehiculo.marca_texto)
+            vehiculo.modelo_texto = data.get('modelo', vehiculo.modelo_texto)
+            vehiculo.anio = int(data.get('anio')) if data.get('anio') else vehiculo.anio
             vehiculo.color = data.get('color', vehiculo.color)
 
-        reserva.observaciones = data.get('observaciones', reserva.observaciones)
+        reserva.observaciones_internas = data.get('observaciones', reserva.observaciones_internas)
 
         db.session.commit()
         flash('Reserva actualizada correctamente.', 'success')
     except Exception as e:
         db.session.rollback()
-        log_error('/admin/reservas/editar', str(e))
+        log_error(
+            '/admin/reservas/editar',
+            f'Reserva #{reserva_id}: {type(e).__name__}: {e}\n{traceback.format_exc()}'
+        )
         flash('Error al actualizar la reserva.', 'danger')
 
     return redirect(url_for('admin.detalle_reserva', reserva_id=reserva.id))
@@ -197,9 +244,6 @@ def eliminar_reserva(reserva_id):
     reserva = Reserva.query.get_or_404(reserva_id)
 
     try:
-        ReservaServicio.query.filter_by(reserva_id=reserva.id).delete()
-        ReservaFactorTiempo.query.filter_by(reserva_id=reserva.id).delete()
-        Vehiculo.query.filter_by(reserva_id=reserva.id).delete()
         db.session.delete(reserva)
         db.session.commit()
         log_admin_action(current_user.email, 'eliminar_reserva', f'Reserva #{reserva_id}')
@@ -224,16 +268,12 @@ def eliminar_reservas_masivo():
         return jsonify({'success': False, 'error': 'Lista de IDs requerida.'}), 400
 
     try:
-        for rid in ids:
-            ReservaServicio.query.filter_by(reserva_id=rid).delete()
-            ReservaFactorTiempo.query.filter_by(reserva_id=rid).delete()
-            Vehiculo.query.filter_by(reserva_id=rid).delete()
-            r = Reserva.query.get(rid)
-            if r:
-                db.session.delete(r)
+        reservas = Reserva.query.filter(Reserva.id.in_(ids)).all()
+        for r in reservas:
+            db.session.delete(r)
         db.session.commit()
-        log_admin_action(current_user.email, 'eliminar_reservas_masivo', f'{len(ids)} reservas')
-        return jsonify({'success': True, 'eliminados': len(ids)})
+        log_admin_action(current_user.email, 'eliminar_reservas_masivo', f'{len(reservas)} reservas')
+        return jsonify({'success': True, 'eliminados': len(reservas)})
     except Exception as e:
         db.session.rollback()
         log_error('/admin/reservas/eliminar-masivo', str(e))

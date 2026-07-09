@@ -30,6 +30,7 @@ def listar_usuarios():
         {
             'id': u.id,
             'nombre': u.nombre,
+            'apellido': u.apellido,
             'email': u.email,
             'rol': u.rol,
             'activo': u.activo,
@@ -60,6 +61,7 @@ def crear_usuario():
     errores = []
     if not nombre:
         errores.append('El nombre es obligatorio.')
+    apellido = (request.form.get('apellido') or '').strip()
     if not email:
         errores.append('El email es obligatorio.')
     elif Usuario.query.filter_by(email=email).first():
@@ -76,7 +78,7 @@ def crear_usuario():
             flash(e, 'danger')
         return redirect(url_for('admin.listar_usuarios'))
 
-    usuario = Usuario(nombre=nombre, email=email, rol=rol)
+    usuario = Usuario(nombre=nombre, apellido=apellido or nombre, email=email, rol=rol)
     usuario.set_password(password)
     db.session.add(usuario)
     db.session.commit()
@@ -102,6 +104,8 @@ def editar_usuario(usuario_id):
         flash('El nombre es obligatorio.', 'danger')
         return redirect(url_for('admin.listar_usuarios'))
 
+    apellido = (data.get('apellido') or '').strip() or usuario.apellido
+
     existente = Usuario.query.filter(Usuario.email == email, Usuario.id != usuario_id).first()
     if existente:
         flash('El email ya esta en uso por otro usuario.', 'danger')
@@ -116,6 +120,7 @@ def editar_usuario(usuario_id):
         return redirect(url_for('admin.listar_usuarios'))
 
     usuario.nombre = nombre
+    usuario.apellido = apellido
     usuario.email = email
     usuario.rol = rol
     usuario.activo = activo

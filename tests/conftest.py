@@ -1,34 +1,13 @@
 import os
-
-os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
-
 import pytest
 
 from config import config as _app_config
+from config import TestConfig
 
-
-class _TestConfig(_app_config['development']):
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    SQLALCHEMY_ENGINE_OPTIONS = {}
-    TESTING = True
-    WTF_CSRF_ENABLED = False
-    WTF_CSRF_SECRET_KEY = 'test-csrf-secret-32chars-minimum'
-
-
-_app_config['testing'] = _TestConfig
-
+_app_config['testing'] = TestConfig
 
 from app import create_app
 from extensions import db as _db
-
-
-@pytest.fixture(autouse=True)
-def _patch_sqlite_with_for_update(monkeypatch):
-    from sqlalchemy.orm.query import Query as SAQuery
-
-    def _noop(self, *args, **kwargs):
-        return self
-    monkeypatch.setattr(SAQuery, 'with_for_update', _noop)
 
 
 @pytest.fixture(autouse=True)
@@ -49,6 +28,7 @@ def app():
     app.config['REDIS_URL'] = ''
 
     with app.app_context():
+        _db.create_all()
         _seed_test_data(_db)
 
     yield app
@@ -66,61 +46,99 @@ def _seed_test_data(db):
     from models.estado_reserva import EstadoReserva
     from models.horario import Horario
     from models.usuario import Usuario
+    from models.segmento import Segmento
     from models.tipo_vehiculo import TipoVehiculo
+    from models.nivel_suciedad import NivelSuciedad
     from models.categoria_servicio import CategoriaServicio
-    from models.tipo_lavado import TipoLavado
-    from models.subtipo_lavado import SubTipoLavado
-    from models.regla_precio import ReglaPrecio
+    from models.servicio import Servicio
+    from models.precio_servicio import PrecioServicio
+    from models.box import Box
+    from models.tipo_box import TipoBox
     from datetime import time
 
     estados_data = [
-        ('Pendiente', '#ffc107', 1), ('Confirmada', '#0d6efd', 2),
-        ('Vehiculo recibido', '#17a2b8', 3), ('En proceso', '#6f42c1', 4),
-        ('Lavado terminado', '#fd7e14', 5), ('Esperando retiro', '#198754', 6),
-        ('Finalizada', '#0dcaf0', 7), ('Cancelada', '#dc3545', 8),
+        ('Pendiente', '#6c757d', 1, False, False),
+        ('Confirmada', '#0d6efd', 2, False, False),
+        ('Recibida', '#198754', 3, False, False),
+        ('En Proceso', '#fd7e14', 4, False, False),
+        ('Lista', '#0dcaf0', 5, False, False),
+        ('Entregada', '#198754', 6, True, False),
+        ('Cancelada', '#dc3545', 7, True, True),
     ]
-    for nombre, color, orden in estados_data:
-        db.session.add(EstadoReserva(nombre=nombre, color_badge=color, orden=orden))
+    for nombre, color, orden, terminal, cancel in estados_data:
+        db.session.add(EstadoReserva(
+            nombre=nombre, color_badge=color, orden=orden,
+            es_terminal=terminal, es_cancelacion=cancel,
+        ))
 
     for dia in range(1, 7):
-        db.session.add(Horario(dia_semana=dia, hora_inicio=time(7, 0), hora_fin=time(18, 0), capacidad_maxima=3, activo=True))
+        db.session.add(Horario(
+            dia_semana=dia, hora_inicio=time(7, 0),
+            hora_fin=time(18, 0), activo=True,
+        ))
 
-    admin = Usuario(nombre='Admin Test', email='admin@test.com', rol='admin', activo=True)
+    admin = Usuario(
+        nombre='Admin', apellido='Test',
+        email='admin@test.com', rol='admin', activo=True,
+    )
     admin.set_password('Test1234!')
     db.session.add(admin)
 
-    emp = Usuario(nombre='Empleado Test', email='empleado@test.com', rol='empleado', activo=True)
+    emp = Usuario(
+        nombre='Empleado', apellido='Test',
+        email='empleado@test.com', rol='empleado', activo=True,
+    )
     emp.set_password('Test1234!')
     db.session.add(emp)
 
-    tv = TipoVehiculo(nombre='Auto', slug='auto', icono='fa-car', orden=1, activo=True)
+    seg = Segmento(nombre='Mediano', slug='mediano', orden=2)
+    db.session.add(seg)
+    tv = TipoVehiculo(nombre='Auto', slug='auto', icono='fa-car', orden=2)
     db.session.add(tv)
-    cs = CategoriaServicio(nombre='Lavado', slug='lavado', orden=1, activo=True)
-    db.session.add(cs)
-    tl = TipoLavado(nombre='Normal', slug='normal', orden=1, activo=True)
-    db.session.add(tl)
-    st = SubTipoLavado(tipo_lavado_id=1, nombre='Completo', slug='completo', orden=1, activo=True)
-    db.session.add(st)
+    nv = NivelSuciedad(nombre='Normal', orden=1)
+    db.session.add(nv)
+    cat = CategoriaServicio(nombre='Lavado', slug='lavado', orden=1)
+    db.session.add(cat)
 
     db.session.flush()
 
-    db.session.add(ReglaPrecio(
-        categoria_servicio_id=cs.id, tipo_vehiculo_id=tv.id,
-        tipo_lavado_id=tl.id, subtipo_lavado_id=st.id,
-        precio_fijo=40000, tiempo_estimado_min=50, dias_bloqueo=0,
-        descripcion_publica='Lavado Normal Completo', activo=True
+    svc = Servicio(
+        nombre='Lavado Completo', slug='lavado-completo',
+        tipo='base', categoria_servicio_id=cat.id,
+    )
+    db.session.add(svc)
+    db.session.flush()
+
+    db.session.add(PrecioServicio(
+        servicio_id=svc.id,
+        tipo_vehiculo_id=tv.id,
+        segmento_id=seg.id,
+        nivel_suciedad_id=nv.id,
+        precio=40000,
+        duracion_minutos=50,
     ))
+
+    tb = TipoBox(nombre='Estandar')
+    db.session.add(tb)
+    db.session.flush()
+    db.session.add(Box(tipo_box_id=tb.id, nombre='Box 1', activo=True, orden=1))
 
     db.session.commit()
 
 
 @pytest.fixture
 def auth_client(client):
-    client.post('/login', data={'email': 'admin@test.com', 'password': 'Test1234!'}, follow_redirects=False)
+    client.post('/login', data={
+        'email': 'admin@test.com',
+        'password': 'Test1234!',
+    }, follow_redirects=False)
     return client
 
 
 @pytest.fixture
 def empleado_client(client):
-    client.post('/login', data={'email': 'empleado@test.com', 'password': 'Test1234!'}, follow_redirects=False)
+    client.post('/login', data={
+        'email': 'empleado@test.com',
+        'password': 'Test1234!',
+    }, follow_redirects=False)
     return client

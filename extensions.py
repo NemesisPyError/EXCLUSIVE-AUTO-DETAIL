@@ -6,10 +6,12 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
+from flask_migrate import Migrate
 
 load_dotenv()
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 
@@ -29,10 +31,6 @@ cache = Cache()
 
 
 def _view_cache_key(path, include_qs=False):
-    """Genera clave versionada para @cache.cached en vistas de catalogo.
-    Incluye catalog:epoch para que invalidar_cache_prefijo() pueda
-    invalidar todas sin flushdb. El prefijo CACHE_KEY_PREFIX de config.py
-    se agrega automaticamente por Flask-Caching."""
     from flask import request
     epoch = cache.get('catalog:epoch') or 0
     key = f'catalog/v{epoch}{path}'
@@ -45,14 +43,6 @@ def _view_cache_key(path, include_qs=False):
 
 
 def invalidar_cache_prefijo(pattern=None):
-    """Invalida datos cacheados sin flushdb ni clear() global.
-    Funciona con RedisCache y SimpleCache: incrementa contadores de version;
-    las entradas huerfanas expiran via TTL (Redis) o se evictan por
-    limite de entradas (SimpleCache threshold=500).
-
-    Args:
-        pattern: None (todo), 'precio', 'catalogo'
-    """
     if pattern is None or pattern == 'precio':
         from services.pricing_service import PricingEngine
         PricingEngine.invalidar_cache_precio()

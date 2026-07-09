@@ -1,0 +1,95 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Marcas — Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Marcas</h5>
+    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalMarca" onclick="resetMarcaForm()">
+        <i class="fa-solid fa-plus me-1"></i> Nueva Marca
+    </button>
+</div>
+
+<div class="filtros-admin">
+    <form method="get" class="d-flex gap-2 align-center w-100">
+        <input type="text" name="buscar" class="form-control" placeholder="Buscar marca..." value="{{ buscar or '' }}" style="max-width:300px;">
+        <button type="submit"><i class="fa-solid fa-search"></i></button>
+        {% if buscar %}<a href="{{ url_for('admin.listar_marcas') }}" class="btn-link-custom">Limpiar</a>{% endif %}
+    </form>
+</div>
+
+{% if marcas %}
+<table class="table-admin">
+    <thead>
+        <tr><th>Nombre</th><th>Slug</th><th>Pais</th><th>Modelos</th><th>Estado</th><th style="width:120px;">Acciones</th></tr>
+    </thead>
+    <tbody>
+    {% for m in marcas %}
+    {% set md = marca_dict.get(m.id, m) %}
+    <tr>
+        <td><strong>{{ m.nombre }}</strong></td>
+        <td>{{ m.slug }}</td>
+        <td>{{ m.pais_origen or '—' }}</td>
+        <td><span class="badge-estado badge-brand">{{ md.modelos|length }}</span></td>
+        <td>
+            <span class="badge-estado {% if m.activo %}color-lista{% else %}color-cancelada{% endif %}">
+                {{ 'Activo' if m.activo else 'Inactivo' }}
+            </span>
+        </td>
+        <td>
+            <button class="btn-secondary" onclick='editarMarca({{ m.id }}, "{{ m.nombre }}", "{{ m.pais_origen or "" }}", {{ "true" if m.activo else "false" }})'><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-secondary" onclick="toggleMarca({{ m.id }})" title="{{ 'Desactivar' if m.activo else 'Activar' }}">
+                <i class="fa-solid {% if m.activo %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+            </button>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination-admin">
+    {% if paginacion.has_prev %}<a href="?page={{ paginacion.prev_num }}{% if buscar %}&buscar={{ buscar }}{% endif %}"><i class="fa-solid fa-arrow-left"></i></a>{% endif %}
+    <span>Pag. {{ paginacion.page }} de {{ paginacion.pages }}</span>
+    {% if paginacion.has_next %}<a href="?page={{ paginacion.next_num }}{% if buscar %}&buscar={{ buscar }}{% endif %}"><i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+</div>
+{% else %}
+<div class="text-center text-muted-custom py-5">No hay marcas{% if buscar %} para "{{ buscar }}"{% endif %}.</div>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalMarca" tabindex="-1">
+    <div class="modal ead-modal-dialog">
+        <form class="modal ead-modal-content" method="post" id="formMarca">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header"><h5 class="modal ead-modal-title" id="modalMarcaTitle">Nueva Marca</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal ead-modal-body">
+                <div class="mb-3"><label class="form-label">Nombre *</label><input type="text" name="nombre" id="m_nombre" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">Pais de origen</label><input type="text" name="pais_origen" id="m_pais" class="form-control"></div>
+                <div class="mb-3"><label class="form-label">Activo</label><select name="activo" id="m_activo" class="form-select"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
+            </div>
+            <div class="modal ead-modal-footer"><button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function resetMarcaForm(){
+    document.getElementById('formMarca').action="{{ url_for('admin.crear_marca') }}";
+    document.getElementById('modalMarcaTitle').textContent='Nueva Marca';
+    document.getElementById('m_nombre').value='';
+    document.getElementById('m_pais').value='';
+    document.getElementById('m_activo').value='1';
+}
+function editarMarca(id,nombre,pais,activo){
+    document.getElementById('formMarca').action="/admin/marcas/"+id+"/editar";
+    document.getElementById('modalMarcaTitle').textContent='Editar Marca';
+    document.getElementById('m_nombre').value=nombre;
+    document.getElementById('m_pais').value=pais;
+    document.getElementById('m_activo').value=activo?'1':'0';
+    new bootstrap.Modal(document.getElementById('modalMarca')).show();
+}
+async function toggleMarca(id){
+    let r=await fetch('/admin/marcas/'+id+'/toggle',{method:'POST',headers:{'X-CSRFToken':document.querySelector('meta[name="csrf-token"]').content}});
+    let d=await r.json();
+    if(d.success) location.reload();
+}
+</script>
+{% endblock %}

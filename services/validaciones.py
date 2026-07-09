@@ -1,87 +1,47 @@
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+from services.duracion import PlanificadorOcupacion
 
 
 def validar_email(email):
-    if not email or not isinstance(email, str):
-        return False
-    patron = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(patron, email.strip()))
+    if not email:
+        return True, ''
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if re.match(pattern, email):
+        return True, ''
+    return False, 'El formato del email no es valido.'
 
 
-def validar_telefono_paraguay(tel):
-    if not tel or not isinstance(tel, str):
-        return False
-    tel = tel.strip()
-    patrones = [
-        r'^\+595\d{9}$',
-        r'^09\d{8}$',
-        r'^\(09\d{2}\)\s?\d{3}\-?\d{3}$',
-    ]
-    return any(re.match(p, tel) for p in patrones)
+def validar_telefono_py(telefono):
+    if not telefono:
+        return False, 'El telefono es obligatorio.'
+    limpio = re.sub(r'[\s\-\(\)\+]', '', telefono)
+    if re.match(r'^5959\d{8}$', limpio) or re.match(r'^09\d{8}$', limpio):
+        return True, ''
+    return False, 'Ingresa un numero de telefono paraguayo valido (0991XXXXXX o +595991XXXXXX).'
 
 
 def validar_fecha_futura(fecha):
-    if not fecha:
-        return False
-    return fecha >= date.today()
+    if fecha < date.today():
+        return False, 'La fecha debe ser hoy o un dia futuro.'
+    return True, ''
 
 
-def validar_capacidad_horario(fecha, hora):
-    from models.horario import Horario
-    from models.reserva import Reserva
-
-    dia = fecha.weekday() + 1
-    horario = Horario.query.filter_by(
-        dia_semana=dia, activo=True
-    ).first()
-
+def validar_dentro_horario(dia_semana, hora, duracion_min):
+    horario = PlanificadorOcupacion.horario_activo(dia_semana)
     if not horario:
-        return False, 0, 'El taller no opera este dia.'
-
-    reservas_count = Reserva.query.filter(
-        Reserva.fecha == fecha,
-        Reserva.hora_inicio == hora
-    ).count()
-
-    lugares_restantes = horario.capacidad_maxima - reservas_count
-    disponible = reservas_count < horario.capacidad_maxima
-    return disponible, lugares_restantes, None
+        return False, 'El taller no atiende ese dia.'
+    if hora < horario.hora_inicio:
+        return False, f'El horario comienza a las {horario.hora_inicio.strftime("%H:%M")}.'
+    from datetime import datetime, timedelta
+    hora_fin = (datetime.combine(date.today(), hora) + timedelta(minutes=duracion_min)).time()
+    if hora_fin > horario.hora_fin:
+        return False, f'El servicio debe terminar antes de las {horario.hora_fin.strftime("%H:%M")}.'
+    return True, ''
 
 
-def validar_disponibilidad_por_rango(fecha, hora_inicio, duracion_min, lock_rows=False):
-    from services.duracion import PlanificadorOcupacion
-    return PlanificadorOcupacion.validar_reserva(fecha, hora_inicio, duracion_min, lock_rows=lock_rows)
-
-
-def validar_precio_estimado(precio_estimado, precio_fijo):
-    if precio_estimado is not None and precio_estimado < 0:
-        return False, 'El precio estimado no puede ser negativo.'
-    if precio_fijo is not None and precio_fijo < 0:
-        return False, 'El precio fijo no puede ser negativo.'
-    return True, None
-
-
-def validar_tiempo_estimado(tiempo_min):
-    if tiempo_min is None or tiempo_min < 0:
-        return False, 'El tiempo estimado debe ser mayor o igual a 0.'
-    return True, None
-
-
-def validar_dias_bloqueo(dias):
-    if dias is None or dias < 0:
-        return False, 'Los dias de bloqueo deben ser mayor o igual a 0.'
-    return True, None
-
-
-def validar_combinacion_precio(regla_precio):
-    tiene_precio_fijo = regla_precio.precio_fijo is not None
-    tiene_precio_estimado = regla_precio.precio_estimado is not None
-
-    if not tiene_precio_fijo and not tiene_precio_estimado:
-        return False, 'Debe especificar al menos un precio (fijo o estimado).'
-
-    if regla_precio.es_precio_estimado and not tiene_precio_estimado:
-        return False, 'Si es precio estimado, debe proporcionar precio_estimado.'
-
-    return True, None
+def validar_disponibilidad(tipo_vehiculo_id, fecha, hora, duracion_min):
+    box = PlanificadorOcupacion.asignar_box(tipo_vehiculo_id, fecha, hora, duracion_min)
+    if box is None:
+        return False, 'No hay box disponible en ese horario. Intenta con otro dia u horario.'
+    return True, box.id

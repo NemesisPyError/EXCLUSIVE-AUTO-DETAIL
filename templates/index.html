@@ -24,7 +24,7 @@
                 <li class="nav-item"><a class="nav-link" href="#testimonios">Testimonios</a></li>
                 <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
                 <li class="nav-item">
-                    <a class="nav-link btn-nav" href="{{ url_for('reservas.nueva') }}">Reservar Turno</a>
+                    <a class="nav-link btn-primary" href="{{ url_for('reservas.nueva') }}">Reservar Turno</a>
                 </li>
                 {% if current_user.is_authenticated %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin</a></li>
@@ -46,8 +46,8 @@
         <p class="slogan">Calidad, Precisión y Compromiso con tu Vehículo</p>
         <p class="subtitle">Todos los servicios se realizan con reserva previa</p>
         <div class="btn-group">
-            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary-custom">Reservar Turno</a>
-            <a href="#servicios" class="btn-outline-custom">Ver Servicios</a>
+            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary">Reservar Turno</a>
+            <a href="#servicios" class="btn-secondary">Ver Servicios</a>
         </div>
     </div>
 </section>
@@ -114,7 +114,7 @@
         </div>
 
         <div class="retiro-cta" data-aos="fade-up" data-aos-duration="700" data-aos-delay="700">
-            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary-custom">
+            <a href="{{ url_for('reservas.nueva') }}" class="btn-primary">
                 <i class="fa-solid fa-calendar-check me-2"></i> Coordinar retiro y entrega
             </a>
         </div>
@@ -130,19 +130,19 @@
             <div class="col-lg-6" data-aos="fade-right" data-aos-duration="800">
                 <img src="{{ url_for('static', filename='img/placeholder-sobre.webp') }}"
                      alt="Exclusive Auto Detail Taller"
-                     onerror="this.style.display='none';this.parentElement.style.background='#1a1a1a';this.parentElement.style.borderRadius='12px';this.parentElement.style.minHeight='400px';">
+                     onerror="this.style.display='none';this.parentElement.style.background='var(--color-bg-1)';this.parentElement.style.borderRadius='var(--radius-md)';this.parentElement.style.minHeight='400px';">
             </div>
             <div class="col-lg-6" data-aos="fade-left" data-aos-duration="800">
                 <span class="badge-service mb-2">Reserva previa garantizada</span>
                 <h2 class="section-title text-start mb-3">Pasión por el Detalle</h2>
                 <div class="section-divider" style="margin:0 0 1.5rem 0;"></div>
-                <p style="color:#e8e8e8;line-height:1.7;">
+                <p style="color:var(--color-text-primary);line-height:1.7;">
                     Exclusive Auto Detail nace en <strong>Hohenau, Paraguay</strong>, con la misión de
                     ofrecer un servicio de estética automotriz de primer nivel. Cada vehículo que
                     recibimos es tratado con la dedicación y precisión que merece, utilizando
                     productos profesionales y técnicas avanzadas.
                 </p>
-                <p style="color:#e8e8e8;line-height:1.7;">
+                <p style="color:var(--color-text-primary);line-height:1.7;">
                     Creemos en la reserva previa como garantía de calidad: cada turno es agendado
                     para dedicar el tiempo necesario a cada detalle, sin apuros ni sorpresas.
                 </p>
@@ -196,7 +196,7 @@
                         <h5>Lavado Express</h5>
                         <p>Lavado exterior rápido con shampoo neutro, secado y neblinado de neumáticos.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 20 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=1) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=1) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -212,7 +212,7 @@
                         <h5>Lavado Detallado</h5>
                         <p>Lavado exterior e interior completo, aspirado profundo, lavado de tapizados y plásticos.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 60 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=2) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=2) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -228,7 +228,7 @@
                         <h5>Limpieza Integral</h5>
                         <p>Lavado Detallado + limpieza de motor, desinfección interna y tratamiento de cueros.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 120 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=3) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=3) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -244,7 +244,7 @@
                         <h5>Pulido Comercial</h5>
                         <p>Pulido mecánico de una etapa, abrillantado y encerado con sellante de alta duración.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 180 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=4) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=4) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -260,7 +260,7 @@
                         <h5>Pulido Técnico</h5>
                         <p>Pulido de dos etapas con corrección de pintura, lustre final y recubrimiento sellador.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 300 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=5) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=5) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -276,7 +276,7 @@
                         <h5>Revestimiento Cerámico</h5>
                         <p>Aplicación de recubrimiento cerámico 9H de dureza, protección contra rayos UV y químicos.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 480 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=6) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=6) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -292,7 +292,7 @@
                         <h5>Remoción de Lluvia Ácida</h5>
                         <p>Tratamiento químico-mecánico para eliminar manchas de lluvia ácida de pintura y cristales.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 120 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=7) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=7) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -308,7 +308,7 @@
                         <h5>Lavado Express de Motos</h5>
                         <p>Lavado exterior rápido, cadena y lubricación básica para tu moto.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 20 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=8) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=8) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -324,7 +324,7 @@
                         <h5>Lavado Detallado de Motos</h5>
                         <p>Lavado completo, pulido de carenados, tratamiento de cromados y acondicionamiento de cadena.</p>
                         <div class="tiempo"><i class="fa-regular fa-clock"></i> 60 min</div>
-                        <a href="{{ url_for('reservas.nueva', servicio=9) }}" class="btn-primary-custom" style="padding:0.5rem 1.25rem;font-size:0.8rem;">Reservar</a>
+                        <a href="{{ url_for('reservas.nueva', servicio=9) }}" class="btn-primary">Reservar</a>
                     </div>
                 </div>
             </div>
@@ -335,7 +335,7 @@
 <!-- ============================================================
      GALERÍA
      ========================================================= -->
-<section class="py-5" id="galeria" style="background-color:var(--bg-secondary);">
+    <section class="py-5" id="galeria" style="background-color:var(--color-bg-1);">
     <div class="container py-5">
         <div data-aos="fade-up" data-aos-duration="600">
             <h2 class="section-title">Galería</h2>
@@ -362,9 +362,9 @@
                 </div>
             </div>
             {% else %}
-            <div class="col-12" style="text-align:center;color:var(--text-muted);padding:3rem 0;">
-                <i class="fa-regular fa-image" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
-                Próximamente más resultados en nuestra galería.
+            <div class="ead-empty-state" style="grid-column:1/-1;">
+                <i class="fa-regular fa-image" style="font-size:2.5rem;"></i>
+                <p>Proximamente mas resultados en nuestra galeria.</p>
             </div>
             {% endfor %}
         </div>
@@ -441,7 +441,7 @@
 <!-- ============================================================
      TESTIMONIOS
      ============================================================ -->
-<section class="py-5" id="testimonios" style="background-color:var(--bg-secondary);">
+    <section class="py-5" id="testimonios" style="background-color:var(--color-bg-1);">
     <div class="container py-5">
         <div data-aos="fade-up" data-aos-duration="600">
             <h2 class="section-title">Lo que Dicen Nuestros Clientes</h2>
@@ -537,18 +537,18 @@
             </div>
             <div class="col-lg-6">
                 <div class="contacto-info h-100">
-                    <p><i class="fa-regular fa-building me-2"></i> <strong>Exclusive Auto Detail</strong></p>
-                    <p><i class="fa-regular fa-location-dot me-2"></i> Hohenau, Itapúa, Paraguay</p>
+                    <p><i class="fa-solid fa-building me-2"></i> <strong>Exclusive Auto Detail</strong></p>
+                    <p><i class="fa-solid fa-location-dot me-2"></i> Hohenau, Itapúa, Paraguay</p>
                     <p><i class="fa-regular fa-clock me-2"></i> <strong>Horarios:</strong></p>
-                    <p style="padding-left:2rem;">Lunes a sábado: 07:00 a 17:00</p>
-                    <p style="padding-left:2rem;">Domingos: Cerrado</p>
+                    <p style="padding-left:var(--space-6);">Lunes a sábado: 07:00 a 17:00</p>
+                    <p style="padding-left:var(--space-6);">Domingos: Cerrado</p>
                     <p><i class="fa-brands fa-whatsapp me-2"></i> <strong>WhatsApp:</strong>
-                        <a href="https://wa.me/595986802902" target="_blank" rel="noopener" style="color:var(--accent);">+595 986 802 902</a>
+                        <a href="https://wa.me/595986802902" target="_blank" rel="noopener" style="color:var(--color-brand);">+595 986 802 902</a>
                     </p>
                     <p><i class="fa-regular fa-envelope me-2"></i> <strong>Email:</strong>
-                        <a href="mailto:info@exclusiveautodetail.com" style="color:var(--accent);">info@exclusiveautodetail.com</a>
+                        <a href="mailto:info@exclusiveautodetail.com" style="color:var(--color-brand);">info@exclusiveautodetail.com</a>
                     </p>
-                    <p class="mt-3 mb-0"><i class="fa-regular fa-circle-check me-2" style="color:var(--accent);"></i>
+                    <p class="mt-3 mb-0"><i class="fa-regular fa-circle-check me-2" style="color:var(--color-brand);"></i>
                     Todos los servicios se realizan con <strong>reserva previa</strong>.</p>
                 </div>
             </div>

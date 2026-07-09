@@ -1,329 +1,229 @@
-from models.servicio import Servicio
-from models.factor_tiempo import FactorTiempo
-from datetime import datetime, timedelta, time, date
+from datetime import date, time, datetime, timedelta, timezone
 from extensions import db
+from models.horario import Horario
+from models.reserva import Reserva
+from models.box import Box
+from models.precio_servicio import PrecioServicio
 
 
 class CalculadorDuracion:
 
-    @staticmethod
-    def calcular(servicio_ids, factor_ids):
-        total = 0
+    MARGEN_TALLER_MINUTOS = 15
 
-        if servicio_ids:
-            suma_servicios = Servicio.query.filter(
-                Servicio.id.in_(servicio_ids)
-            ).with_entities(
-                db.func.coalesce(db.func.sum(Servicio.tiempo_estimado_min), 0)
-            ).scalar()
-            total += int(suma_servicios)
+    @classmethod
+    def calcular_duracion(cls, servicio_id, tipo_vehiculo_id, segmento_id,
+                          nivel_suciedad_id, adicionales_ids=None):
+        ids_a_consultar = [servicio_id]
+        if adicionales_ids:
+            ids_a_consultar.extend(adicionales_ids)
 
-        if factor_ids:
-            suma_factores = FactorTiempo.query.filter(
-                FactorTiempo.id.in_(factor_ids),
-                FactorTiempo.activo.is_(True),
-            ).with_entities(
-                db.func.coalesce(db.func.sum(FactorTiempo.minutos_adicionales), 0)
-            ).scalar()
-            total += int(suma_factores)
+        precios = {
+            p.servicio_id: p
+            for p in db.session.query(PrecioServicio).filter(
+                PrecioServicio.servicio_id.in_(ids_a_consultar),
+                PrecioServicio.tipo_vehiculo_id == tipo_vehiculo_id,
+                PrecioServicio.segmento_id == segmento_id,
+                PrecioServicio.nivel_suciedad_id == nivel_suciedad_id,
+            ).all()
+        }
 
-        return total
+        base = precios.get(servicio_id)
+        minutos = base.duracion_minutos if base else 60
 
-    @staticmethod
-    def calcular_hora_fin(hora_inicio, duracion_min):
-        base = datetime.combine(datetime.today(), hora_inicio)
-        fin = base + timedelta(minutes=duracion_min)
-        return fin.time()
+        if adicionales_ids:
+            for ad_id in adicionales_ids:
+                ad = precios.get(ad_id)
+                if ad:
+                    minutos += ad.duracion_minutos
+
+        minutos += cls.MARGEN_TALLER_MINUTOS
+        return minutos
 
 
 class PlanificadorOcupacion:
 
-    PASO_SLOT = 30
-
-    # ------------------------------------------------------------------
-    # Metodos de planificacion
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def clasificar_servicio(duracion_min):
-        if duracion_min <= 60:
-            return 'rapido'
-        elif duracion_min <= 180:
-            return 'normal'
-        return 'detallado'
-
-    @staticmethod
-    def calcular_entrega(fecha_inicio, hora_inicio, duracion_min):
-        """Calcula la fecha y hora estimada de entrega considerando
-        los horarios laborales. Para servicios que exceden el cierre,
-        calcula el siguiente dia habil."""
-        from models.horario import Horario
-
-        restante = duracion_min
-        fecha = fecha_inicio
-        cursor = datetime.combine(fecha, hora_inicio)
-        max_dias = 30
-
-        for _ in range(max_dias):
-            dia = fecha.weekday() + 1
-            horario = Horario.query.filter_by(dia_semana=dia, activo=True).first()
-
-            if not horario:
-                fecha += timedelta(days=1)
-                cursor = datetime.combine(fecha, time(7, 0))
-                continue
-
-            cierre_dt = datetime.combine(fecha, horario.hora_fin)
-            if cursor < datetime.combine(fecha, horario.hora_inicio):
-                cursor = datetime.combine(fecha, horario.hora_inicio)
-
-            disponibles = int((cierre_dt - cursor).total_seconds() / 60)
-            if disponibles <= 0:
-                fecha += timedelta(days=1)
-                cursor = datetime.combine(fecha, horario.hora_inicio)
-                continue
-
-            if disponibles >= restante:
-                entrega = cursor + timedelta(minutes=restante)
-                return entrega.date(), entrega.time(), None
-
-            restante -= disponibles
-            fecha += timedelta(days=1)
-            dia_next = fecha.weekday() + 1
-            horario_next = Horario.query.filter_by(dia_semana=dia_next, activo=True).first()
-            if horario_next:
-                cursor = datetime.combine(fecha, horario_next.hora_inicio)
-            else:
-                cursor = datetime.combine(fecha, time(7, 0))
-
-        return None, None, 'No se pudo calcular la entrega estimada.'
-
-    # ------------------------------------------------------------------
-    # Metodos existentes (sin cambios)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def intervalos_del_dia(fecha, for_update=False):
-        from models.reserva import Reserva
-
-        if not for_update:
-            from extensions import cache
-            cache_key = f'intervalos:{fecha.isoformat()}'
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
-
-        query = Reserva.query.filter(Reserva.fecha == fecha)
-        if for_update:
-            query = query.with_for_update()
-        reservas = query.all()
-
-        intervalos = []
-        for r in reservas:
-            fin = r.hora_fin_calculada
-            if fin is None:
-                continue
-            intervalos.append((r.hora_inicio, fin))
-
-        if not for_update:
-            from extensions import cache
-            cache.set(f'intervalos:{fecha.isoformat()}', intervalos, timeout=1800)
-
-        return intervalos
-
     @classmethod
-    def concurrentes_en_punto(cls, fecha, punto_time):
-        intervalos = cls.intervalos_del_dia(fecha)
-        return sum(1 for ini, fin in intervalos if ini <= punto_time < fin)
+    def boxes_disponibles(cls, tipo_vehiculo_id):
+        from models.box_tipo_vehiculo import BoxTipoVehiculo
 
-    @classmethod
-    def validar_reserva(cls, fecha, hora_inicio, duracion_min, lock_rows=False):
-        from models.horario import Horario
+        tipo_box_ids = (
+            db.session.query(BoxTipoVehiculo.tipo_box_id)
+            .filter_by(tipo_vehiculo_id=tipo_vehiculo_id)
+            .all()
+        )
+        tipo_box_id_list = [b[0] for b in tipo_box_ids]
 
-        dia = fecha.weekday() + 1
-        horario = Horario.query.filter_by(dia_semana=dia, activo=True).first()
+        if not tipo_box_id_list:
+            return []
 
-        if not horario:
-            return False, 'El taller no opera este dia.'
-
-        # Para servicios rapidos/normales: no deben exceder el cierre
-        clase = cls.clasificar_servicio(duracion_min)
-        hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=duracion_min)).time()
-        if clase != 'detallado' and hora_fin > horario.hora_fin:
-            return False, 'El servicio excede el horario de cierre del taller.'
-
-        if hora_inicio < horario.hora_inicio:
-            return False, 'La hora de inicio esta fuera del horario de atencion.'
-
-        # Para servicios detallados: verificar solo hasta el cierre del primer dia
-        minutos_a_verificar = duracion_min
-        cierre_dt = datetime.combine(fecha, horario.hora_fin)
-        inicio_dt = datetime.combine(fecha, hora_inicio)
-        if clase == 'detallado':
-            minutos_hasta_cierre = int((cierre_dt - inicio_dt).total_seconds() / 60)
-            if minutos_hasta_cierre > 0:
-                minutos_a_verificar = min(duracion_min, minutos_hasta_cierre)
-
-        intervalos = cls.intervalos_del_dia(fecha, for_update=lock_rows)
-        capacidad = horario.capacidad_maxima
-
-        if not intervalos:
-            return True, None
-
-        for minuto in range(0, minutos_a_verificar + 1):
-            t_check = (inicio_dt + timedelta(minutes=minuto)).time()
-            if t_check > horario.hora_fin:
-                break
-            concurrentes = sum(
-                1 for ini, fin in intervalos
-                if ini <= t_check < fin
+        return (
+            db.session.query(Box)
+            .filter(
+                Box.tipo_box_id.in_(tipo_box_id_list),
+                Box.activo.is_(True),
             )
-            if concurrentes >= capacidad:
-                return False, (
-                    f'Capacidad maxima ({capacidad}) '
-                    f'alcanzada a las {t_check.strftime("%H:%M")} hs.'
-                )
-
-        return True, None
+            .order_by(Box.tipo_box_id, Box.orden)
+            .all()
+        )
 
     @classmethod
-    def capacidad_restante_en_punto(cls, fecha, punto_time):
-        from models.horario import Horario
-
-        dia = fecha.weekday() + 1
-        horario = Horario.query.filter_by(dia_semana=dia, activo=True).first()
-        if not horario:
-            return 0
-
-        ocupados = cls.concurrentes_en_punto(fecha, punto_time)
-        return max(horario.capacidad_maxima - ocupados, 0)
+    def _hora_a_minutos(cls, t):
+        return t.hour * 60 + t.minute
 
     @classmethod
-    def capacidad_minima_durante_intervalo(cls, fecha, hora_inicio, duracion_min):
-        paso = cls.PASO_SLOT
-        min_cap = None
-
-        for offset in range(0, duracion_min + 1, paso):
-            t_check = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=offset)).time()
-            cap = cls.capacidad_restante_en_punto(fecha, t_check)
-            if min_cap is None or cap < min_cap:
-                min_cap = cap
-            if min_cap == 0:
-                break
-
-        return min_cap if min_cap is not None else 0
+    def _reservas_en_box_fecha(cls, box_id, fecha):
+        query = (
+            db.session.query(Reserva)
+            .filter(
+                Reserva.fecha == fecha,
+                Reserva.deleted_at.is_(None),
+            )
+        )
+        if box_id is not None:
+            query = query.filter(Reserva.box_id == box_id)
+        return query.order_by(Reserva.hora_inicio).all()
 
     @classmethod
-    def slots_disponibles(cls, fecha, duracion_min):
-        from models.horario import Horario
+    def hay_disponibilidad(cls, box_id, fecha, hora_inicio, duracion_min):
+        inicio_min = cls._hora_a_minutos(hora_inicio)
+        fin_min = inicio_min + duracion_min
 
-        dia = fecha.weekday() + 1
-        horario = Horario.query.filter_by(dia_semana=dia, activo=True).first()
+        reservas = cls._reservas_en_box_fecha(box_id, fecha)
 
+        for r in reservas:
+            r_inicio = cls._hora_a_minutos(r.hora_inicio)
+            r_fin = r_inicio + r.duracion_total_min
+            if inicio_min < r_fin and fin_min > r_inicio:
+                return False
+        return True
+
+    @classmethod
+    def asignar_box(cls, tipo_vehiculo_id, fecha, hora_inicio, duracion_min):
+        boxes = cls.boxes_disponibles(tipo_vehiculo_id)
+        for box in boxes:
+            if cls.hay_disponibilidad(box.id, fecha, hora_inicio, duracion_min):
+                return box
+        return None
+
+    @classmethod
+    def horario_activo(cls, dia_semana):
+        return (
+            Horario.query
+            .filter_by(dia_semana=dia_semana, activo=True)
+            .first()
+        )
+
+    @classmethod
+    def slots_disponibles(cls, fecha, duracion_min, tipo_vehiculo_id=None):
+        horario = cls.horario_activo(fecha.isoweekday())
         if not horario:
             return []
 
-        clase = cls.clasificar_servicio(duracion_min)
-        resultado = []
-        paso = cls.PASO_SLOT
-        cursor = datetime.combine(fecha, horario.hora_inicio)
+        boxes = []
+        if tipo_vehiculo_id:
+            boxes = cls.boxes_disponibles(tipo_vehiculo_id)
 
-        while True:
-            hora_actual = cursor.time()
-            if hora_actual < horario.hora_inicio:
-                cursor += timedelta(minutes=paso)
-                continue
+        box_ids = [b.id for b in boxes] if boxes else []
+        reservas = {}
+        if box_ids:
+            for r in cls._reservas_en_box_fecha(None, fecha):
+                if r.box_id in box_ids:
+                    reservas.setdefault(r.box_id, []).append(r)
+            for bid in box_ids:
+                reservas.setdefault(bid, [])
 
-            hora_fin_simulada = (cursor + timedelta(minutes=duracion_min)).time()
+        slots = []
+        intervalo = 30
+        hora = datetime.combine(fecha, horario.hora_inicio)
+        fin = datetime.combine(fecha, horario.hora_fin)
 
-            # Servicios rapidos/normales deben caber en el horario
-            if clase != 'detallado' and hora_fin_simulada > horario.hora_fin:
-                break
+        while hora + timedelta(minutes=duracion_min) <= fin:
+            hh = hora.time()
+            disponible = False
 
-            # Ya no hay mas slots validos
-            if cursor.time() >= horario.hora_fin:
-                break
-
-            cap = cls.capacidad_minima_durante_intervalo(fecha, hora_actual, duracion_min)
-            disponible = cap > 0
-
-            if clase == 'detallado':
-                fe, he, _ = cls.calcular_entrega(fecha, hora_actual, duracion_min)
-                entrega = fe.strftime('%d/%m') + ' ' + he.strftime('%H:%M') if fe and he else None
+            if box_ids:
+                for bid in box_ids:
+                    ocupado = False
+                    for r in reservas.get(bid, []):
+                        r_inicio = cls._hora_a_minutos(r.hora_inicio)
+                        r_fin = r_inicio + r.duracion_total_min
+                        slot_inicio = cls._hora_a_minutos(hh)
+                        slot_fin = slot_inicio + duracion_min
+                        if slot_inicio < r_fin and slot_fin > r_inicio:
+                            ocupado = True
+                            break
+                    if not ocupado:
+                        disponible = True
+                        break
             else:
-                entrega = cls._formatear_hora(hora_fin_simulada)
+                disponible = True
 
-            resultado.append({
-                'hora': hora_actual.strftime('%H:%M'),
+            slots.append({
+                'hora': hh.strftime('%H:%M'),
                 'disponible': disponible,
-                'lugares': cap,
-                'entrega': entrega,
-                'clase': clase,
             })
+            hora += timedelta(minutes=intervalo)
 
-            cursor += timedelta(minutes=paso)
-
-        return resultado
-
-    @staticmethod
-    def _formatear_hora(t):
-        return t.strftime('%H:%M') if t else None
-
-    # ------------------------------------------------------------------
-    # NUEVO: Soporte multi-dia (Integral)
-    # ------------------------------------------------------------------
+        return slots
 
     @classmethod
-    def reservas_en_dia(cls, fecha):
-        from models.reserva import Reserva
-        return Reserva.query.filter(Reserva.fecha == fecha).count()
-
-    @classmethod
-    def validar_multidia(cls, fecha_inicio, dias, duracion_min):
-        resultado = {
-            'disponible': True,
-            'bloqueos': [],
-            'dias_problema': [],
-        }
-
-        from models.horario import Horario
-
-        fecha_cursor = fecha_inicio
+    def validar_multidia(cls, fecha, dias, duracion_min):
+        resultado = []
         for i in range(dias):
-            dia_semana = fecha_cursor.weekday() + 1
-
-            domingo = dia_semana == 7
-            if domingo:
-                fecha_cursor += timedelta(days=1)
-                continue
-
-            horario = Horario.query.filter_by(
-                dia_semana=dia_semana, activo=True
-            ).first()
-
-            bloque = {
-                'fecha': fecha_cursor.strftime('%Y-%m-%d'),
-                'dia_semana': dia_semana,
-                'opera': horario is not None,
-                'tiene_capacidad': False,
-                'reservas_existentes': cls.reservas_en_dia(fecha_cursor),
-                'capacidad_maxima': horario.capacidad_maxima if horario else 0,
-            }
-
-            if horario:
-                bloque['tiene_capacidad'] = (
-                    bloque['reservas_existentes'] < horario.capacidad_maxima
-                )
-
-            resultado['bloqueos'].append(bloque)
-
-            if not horario:
-                resultado['disponible'] = False
-                resultado['dias_problema'].append(fecha_cursor.strftime('%Y-%m-%d'))
-            elif bloque['reservas_existentes'] >= horario.capacidad_maxima:
-                resultado['disponible'] = False
-                resultado['dias_problema'].append(fecha_cursor.strftime('%Y-%m-%d'))
-
-            fecha_cursor += timedelta(days=1)
-
+            dia = fecha + timedelta(days=i)
+            horario = cls.horario_activo(dia.isoweekday())
+            resultado.append({
+                'fecha': dia.isoformat(),
+                'disponible': horario is not None,
+            })
         return resultado
+
+    @classmethod
+    def obtener_agenda_dia(cls, fecha):
+        horario = cls.horario_activo(fecha.isoweekday())
+        if not horario:
+            return {"boxes": [], "horas": [], "horas_objs": [], "reservas": {}}
+
+        from sqlalchemy.orm import joinedload
+        boxes = (
+            Box.query
+            .options(joinedload(Box.tipo_box))
+            .order_by(Box.tipo_box_id, Box.orden)
+            .all()
+        )
+
+        horas = []
+        horas_objs = []
+        h = datetime.combine(fecha, horario.hora_inicio)
+        fin = datetime.combine(fecha, horario.hora_fin)
+        while h < fin:
+            horas.append(h.strftime('%H:%M'))
+            horas_objs.append(h)
+            h += timedelta(minutes=30)
+
+        reservas = (
+            db.session.query(Reserva)
+            .options(
+                joinedload(Reserva.cliente),
+                joinedload(Reserva.servicio),
+                joinedload(Reserva.vehiculo).joinedload('tipo_vehiculo'),
+            )
+            .filter(
+                Reserva.fecha == fecha,
+                Reserva.box_id.isnot(None),
+                Reserva.deleted_at.is_(None),
+            )
+            .order_by(Reserva.box_id, Reserva.hora_inicio)
+            .all()
+        )
+
+        reservas_por_box = {}
+        for r in reservas:
+            reservas_por_box.setdefault(r.box_id, []).append(r)
+
+        return {
+            "boxes": boxes,
+            "horas": horas,
+            "horas_objs": horas_objs,
+            "reservas": reservas_por_box,
+        }

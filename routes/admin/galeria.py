@@ -36,7 +36,7 @@ def listar_galeria():
             'categoria_id': it.categoria_id,
             'categoria_nombre': it.categoria.nombre if it.categoria else '',
             'titulo': it.titulo,
-            'descripcion': it.descripcion or '',
+            'activo': it.activo,
             'activo': it.activo,
         }
         for it in items
@@ -105,8 +105,7 @@ def editar_categoria_galeria(cat_id):
     viejo = cat.nombre
     cat.nombre = nombre
     cat.activo = request.form.get('activo', '1') == '1'
-    for img in cat.imagenes:
-        img.tipo = nombre
+    # categoria renombrada: no requiere actualizar campo tipo (ya no existe)
     db.session.commit()
     flash(f'Categoría renombrada de "{viejo}" a "{nombre}".', 'success')
     return redirect(url_for('admin.listar_galeria'))
@@ -187,10 +186,8 @@ def crear_galeria():
         orden_base += 1
         item = Galeria(
             titulo=(data.get('titulo') or '').strip() or cat.nombre,
-            descripcion=(data.get('descripcion') or '').strip() or None,
             url_imagen=url_main,
             url_thumb=url_thumb,
-            tipo=cat.nombre,
             categoria_id=cat.id,
             activo=data.get('activo', '1') == '1',
             orden=orden_base,
@@ -225,9 +222,7 @@ def editar_galeria(item_id):
         return redirect(url_for('admin.listar_galeria'))
 
     item.titulo = (data.get('titulo') or '').strip() or cat.nombre
-    item.descripcion = (data.get('descripcion') or '').strip() or None
     item.categoria_id = cat.id
-    item.tipo = cat.nombre
     item.activo = data.get('activo', '1') == '1'
 
     archivo = request.files.get('imagen')

@@ -10,7 +10,7 @@
     </button>
 </div>
 
-<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.5rem;">
+<p style="color:var(--color-text-secondary);font-size:0.85rem;margin-bottom:1.5rem;">
     Configurá los tiempos adicionales por nivel de suciedad, condiciones del vehículo y otros factores. Estos minutos se suman a la duración base de los servicios contratados.
 </p>
 
@@ -21,7 +21,7 @@
             <i class="fa-solid {% if tipo == 'suciedad' %}fa-droplet{% elif tipo == 'condicion' %}fa-triangle-exclamation{% else %}fa-gear{% endif %} me-2"></i>
             {{ tipos_labels.get(tipo, tipo|capitalize) }}
         </h3>
-        <span style="font-size:0.75rem;color:var(--text-muted);">{{ items|length }} factor(es)</span>
+        <span style="font-size:0.75rem;color:var(--color-text-secondary);">{{ items|length }} factor(es)</span>
     </div>
     <table class="table-admin" style="margin-bottom:0;">
         <thead>
@@ -36,7 +36,7 @@
             {% for f in items %}
             <tr>
                 <td style="font-weight:600;">{{ f.nombre }}</td>
-                <td><span style="background:rgba(26,107,255,0.12);color:var(--accent);padding:0.2rem 0.6rem;border-radius:4px;font-weight:700;">+{{ f.minutos_adicionales }} min</span></td>
+                <td><span class="badge-estado badge-brand" style=padding:0.2rem 0.6rem;border-radius:4px;font-weight:700;">+{{ f.minutos_adicionales }} min</span></td>
                 <td>
                     <button class="badge-estado {% if f.activo %}color-confirmada{% else %}color-cancelada{% endif %}"
                             style="border:none;cursor:pointer;"
@@ -57,7 +57,7 @@
             </tr>
             {% endfor %}
             {% if not items %}
-            <tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:1.5rem;">Sin factores configurados para este tipo.</td></tr>
+            <tr><td colspan="4" style="color:var(--color-text-secondary);text-align:center;padding:1.5rem;">Sin factores configurados para este tipo.</td></tr>
             {% endif %}
         </tbody>
     </table>
@@ -66,8 +66,8 @@
 
 {% if not agrupados %}
 <div class="admin-card" style="text-align:center;padding:3rem;">
-    <i class="fa-solid fa-clock" style="font-size:2.5rem;color:var(--text-muted);display:block;margin-bottom:1rem;"></i>
-    <p style="color:var(--text-muted);font-size:0.9rem;">No hay factores de tiempo configurados.</p>
+    <i class="fa-solid fa-clock" style="font-size:2.5rem;color:var(--color-text-secondary);display:block;margin-bottom:1rem;"></i>
+    <p style="color:var(--color-text-secondary);font-size:0.9rem;">No hay factores de tiempo configurados.</p>
     <button class="btn-sm-custom success mt-2" data-bs-toggle="modal" data-bs-target="#modalFactor" onclick="nuevoFactor()">
         Crear primer factor
     </button>
@@ -86,7 +86,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label" style="color:var(--text-light);">Tipo *</label>
+                        <label class="form-label" style="color:var(--color-text-secondary);">Tipo *</label>
                         <select class="form-select" name="tipo" id="factorTipo" required>
                             {% for t in tipos %}
                             <option value="{{ t }}">{{ tipos_labels.get(t, t|capitalize) }}</option>
@@ -94,16 +94,16 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" style="color:var(--text-light);">Nombre *</label>
+                        <label class="form-label" style="color:var(--color-text-secondary);">Nombre *</label>
                         <input type="text" class="form-control" name="nombre" id="factorNombre" required placeholder="Ej: Leve, Mucho barro, Lavado de motor...">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" style="color:var(--text-light);">Minutos adicionales</label>
+                        <label class="form-label" style="color:var(--color-text-secondary);">Minutos adicionales</label>
                         <input type="number" class="form-control" name="minutos_adicionales" id="factorMinutos" value="0" min="0">
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="activo" id="factorActivo" value="1" checked>
-                        <label class="form-check-label" style="color:var(--text-light);" for="factorActivo">Activo</label>
+                        <label class="form-check-label" style="color:var(--color-text-secondary);" for="factorActivo">Activo</label>
                     </div>
                 </div>
                 <div class="modal-footer">

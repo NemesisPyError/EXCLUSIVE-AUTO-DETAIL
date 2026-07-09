@@ -1,10 +1,10 @@
 import os
 import sys
 import logging
-from flask import Flask, request
+from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
-from extensions import db, login_manager, csrf, limiter, cache
+from extensions import db, migrate, login_manager, csrf, limiter, cache
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,13 @@ logger = logging.getLogger(__name__)
 def _setup_proxy(app):
     proxy_count = app.config.get('PROXY_COUNT', 0)
     if proxy_count > 0:
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxy_count, x_proto=proxy_count, x_host=0, x_port=0)
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=proxy_count,
+            x_proto=proxy_count,
+            x_host=0,
+            x_port=0,
+        )
         logger.info('ProxyFix activado con x_for=x_proto=%d', proxy_count)
 
 
@@ -44,6 +50,7 @@ def create_app(config_name=None):
         sys.exit(1)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
@@ -60,7 +67,10 @@ def create_app(config_name=None):
     from template_helpers import register_template_helpers
     register_template_helpers(app)
 
-    from routes import main_bp, auth_bp, admin_bp, reservas_bp, api_bp, webhooks_bp, api_publica_bp
+    from routes import (
+        main_bp, auth_bp, admin_bp, reservas_bp,
+        api_bp, webhooks_bp, api_publica_bp,
+    )
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -70,12 +80,7 @@ def create_app(config_name=None):
     app.register_blueprint(webhooks_bp, url_prefix='/webhooks')
 
     with app.app_context():
-        import models
-        db.create_all()
-        from database.migrations import migrar_galeria_categorias, asegurar_esquema, _migrar_estados_cambio
-        migrar_galeria_categorias()
-        asegurar_esquema()
-        _migrar_estados_cambio()
+        import models  # noqa: F401
 
     return app
 

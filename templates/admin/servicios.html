@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 <style>
-    .color-gratis { background: rgba(25, 135, 84, 0.15); color: #198754; }
+    .color-gratis { background: var(--color-success-tint); color: var(--color-success); }
 </style>
 {% endblock %}
 
@@ -33,15 +33,15 @@
                 {% for s in servicios %}
                 <tr>
                     <td style="font-weight:600;">{{ s.nombre }}</td>
-                    <td style="font-size:0.8rem;color:var(--text-muted);">{{ s.categoria | replace('_',' ') | title }}</td>
+                    <td style="font-size:0.8rem;color:var(--color-text-secondary);">{{ s.categoria | replace('_',' ') | title }}</td>
                     <td>{% if s.precio == 0 %}<span class="badge-estado color-gratis">Gratis</span>{% else %}₲ {{ s.precio | int | thousandsep }}{% endif %}</td>
                     <td style="font-size:0.8rem;">{{ s.tiempo_estimado_formateado }}</td>
                     <td>
                         <label class="toggle-switch" style="position:relative;display:inline-block;width:40px;height:22px;">
                             <input type="checkbox" class="toggle-servicio" data-id="{{ s.id }}" {% if s.activo %}checked{% endif %}
                                    style="opacity:0;width:0;height:0;">
-                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if s.activo %}var(--accent){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
-                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--white);top:2px;left:{% if s.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
+                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if s.activo %}var(--color-brand){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
+                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);top:2px;left:{% if s.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
                             </span>
                         </label>
                     </td>
@@ -59,7 +59,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">No hay servicios registrados.</td></tr>
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No hay servicios registrados.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -113,7 +113,7 @@
                             <input type="checkbox" name="gratis" id="s_gratis" value="1" class="form-check-input" style="margin-right:0.5rem;">
                             Ofrecer gratis (sin costo)
                         </label>
-                        <small style="color:var(--text-muted);font-size:0.72rem;display:block;margin-top:0.25rem;margin-left:1.4rem;">
+                        <small style="color:var(--color-text-secondary);font-size:0.72rem;display:block;margin-top:0.25rem;margin-left:1.4rem;">
                             Al activarlo, el precio queda en 0 y el servicio se muestra como "Gratis" en la reserva.
                         </small>
                     </div>

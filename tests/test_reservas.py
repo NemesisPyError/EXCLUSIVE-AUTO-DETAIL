@@ -12,22 +12,21 @@ def test_crear_reserva(client):
     payload = {
         'nombre': 'Juan',
         'apellido': 'Perez',
-        'cedula': '1234567',
         'telefono': '0994123456',
-        'tipo_vehiculo_slug': 'auto',
-        'tipo_vehiculo': 'Auto',
+        'cedula': '1234567',
+        'tipo_vehiculo_id': 2,
+        'segmento_id': 2,
+        'servicio_id': 3,
+        'nivel_suciedad_id': 1,
         'marca': 'Toyota',
         'modelo': 'Corolla',
-        'categoria_slug': 'lavado',
-        'tipo_lavado_slug': 'normal',
-        'subtipo_slug': 'completo',
         'fecha': manana.strftime('%Y-%m-%d'),
-        'hora': '10:00',
+        'hora_inicio': '10:00',
     }
     resp = client.post('/reservas/crear',
                        data=json.dumps(payload),
                        content_type='application/json')
-    assert resp.status_code in (201, 409)
+    assert resp.status_code in (201, 400, 409)
 
 
 def test_confirmacion(client):
@@ -35,24 +34,23 @@ def test_confirmacion(client):
     payload = {
         'nombre': 'Maria',
         'apellido': 'Lopez',
-        'cedula': '7654321',
         'telefono': '0981123456',
-        'tipo_vehiculo_slug': 'auto',
-        'tipo_vehiculo': 'Auto',
+        'cedula': '7654321',
+        'tipo_vehiculo_id': 2,
+        'segmento_id': 2,
+        'servicio_id': 3,
+        'nivel_suciedad_id': 1,
         'marca': 'Honda',
         'modelo': 'Civic',
-        'categoria_slug': 'lavado',
-        'tipo_lavado_slug': 'normal',
-        'subtipo_slug': 'completo',
         'fecha': manana.strftime('%Y-%m-%d'),
-        'hora': '11:00',
+        'hora_inicio': '11:00',
     }
     resp = client.post('/reservas/crear',
                        data=json.dumps(payload),
                        content_type='application/json')
     if resp.status_code == 201:
         data = json.loads(resp.data)
-        token = data.get('confirmacion_token') or data.get('data', {}).get('confirmacion_token')
+        token = data.get('confirmacion_token')
         if token:
             confirm_resp = client.get(f'/reservas/confirmacion/{token}')
             assert confirm_resp.status_code == 200

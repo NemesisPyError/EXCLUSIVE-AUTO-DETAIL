@@ -2,17 +2,25 @@
    Exclusive Auto Detail — Styles
    ========================================================= */
 
+@import url('tokens.css');
+@import url('components.css');
+
 :root {
-    --bg-primary: #0d0d0d;
-    --bg-secondary: #111111;
-    --bg-card: #1a1a1a;
-    --accent: #1a6bff;
-    --accent-hover: #1557d9;
-    --white: #ffffff;
-    --text-muted: #a0a0a0;
-    --text-light: #cccccc;
-    --border-subtle: #2a2a2a;
-    --font: 'Montserrat', sans-serif;
+    /* Legacy aliases — official tokens from tokens.css */
+    --bg-primary: var(--color-bg-0);
+    --bg-secondary: var(--color-bg-1);
+    --bg-card: var(--color-bg-1);
+    --bg-dark: var(--color-bg-0);
+    --accent: var(--color-brand);
+    --accent-hover: var(--color-brand-hover);
+    --accent-gold: var(--color-gold);
+    --white: var(--color-text-primary);
+    --text-muted: var(--color-text-secondary);
+    --text-light: var(--color-text-secondary);
+    --border-subtle: var(--color-border);
+    --success: var(--color-success);
+    --warning: var(--color-warning);
+    --font: var(--font-family);
 }
 
 * {
@@ -94,18 +102,6 @@ img {
     color: var(--accent) !important;
 }
 
-.navbar .nav-link.btn-nav {
-    background-color: var(--accent);
-    color: var(--white) !important;
-    border-radius: 6px;
-    padding: 0.5rem 1.25rem !important;
-    margin-left: 0.5rem;
-}
-
-.navbar .nav-link.btn-nav:hover {
-    background-color: var(--accent-hover);
-}
-
 .navbar-toggler {
     border: none;
     padding: 0;
@@ -141,6 +137,7 @@ img {
 .hero-bg {
     position: absolute;
     inset: 0;
+    background-color: var(--bg-primary);
     background-image: url('../img/hero-bg.webp');
     background-size: cover;
     background-position: center;
@@ -192,53 +189,6 @@ img {
     gap: 1rem;
     justify-content: center;
     flex-wrap: wrap;
-}
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-.btn-primary-custom {
-    display: inline-block;
-    padding: 0.85rem 2rem;
-    background-color: var(--accent);
-    color: var(--white);
-    font-weight: 700;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    border: 2px solid var(--accent);
-    letter-spacing: 0.5px;
-    transition: all 0.25s ease;
-    cursor: pointer;
-    font-family: var(--font);
-}
-
-.btn-primary-custom:hover {
-    background-color: var(--accent-hover);
-    border-color: var(--accent-hover);
-    color: var(--white);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(26, 107, 255, 0.3);
-}
-
-.btn-outline-custom {
-    display: inline-block;
-    padding: 0.85rem 2rem;
-    background-color: transparent;
-    color: var(--white);
-    font-weight: 700;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    border: 2px solid var(--text-muted);
-    letter-spacing: 0.5px;
-    transition: all 0.25s ease;
-    cursor: pointer;
-    font-family: var(--font);
-}
-
-.btn-outline-custom:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateY(-2px);
 }
 
 /* =========================================================
@@ -594,11 +544,6 @@ img {
     margin-top: 3rem;
     position: relative;
     z-index: 1;
-}
-
-.retiro-cta .btn-primary-custom {
-    padding: 0.85rem 2rem;
-    font-size: 0.9rem;
 }
 
 @media (max-width: 991.98px) {
@@ -1009,23 +954,23 @@ img {
 }
 
 .social-icon.ig:hover {
-    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    background: linear-gradient(45deg, var(--color-brand-instagram-1), var(--color-brand-instagram-2), var(--color-brand-instagram-3), var(--color-brand-instagram-4), var(--color-brand-instagram-5));
     color: var(--white);
 }
 
 .social-icon.fb:hover {
-    background-color: #1877f2;
+    background-color: var(--color-brand-facebook);
     color: var(--white);
 }
 
 .social-icon.tiktok:hover {
     background-color: #000;
     color: var(--white);
-    box-shadow: 0 0 0 2px #ff0050;
+    box-shadow: 0 0 0 2px var(--color-brand-tiktok);
 }
 
 .social-icon.ws:hover {
-    background-color: #25d366;
+    background-color: var(--color-brand-whatsapp);
     color: var(--white);
 }
 
@@ -1266,15 +1211,6 @@ img {
         gap: 0.6rem;
     }
 
-    .btn-primary-custom,
-    .btn-outline-custom {
-        padding: 0.65rem 1.25rem;
-        font-size: 0.82rem;
-        width: 100%;
-        max-width: 260px;
-        text-align: center;
-    }
-
     /* ── Row gap ── */
     .row.g-4 {
         --bs-gutter-x: 0.65rem;
@@ -1341,14 +1277,6 @@ img {
 
     .service-card .card-body .tiempo i {
         font-size: 0.68rem;
-    }
-
-    .service-card .card-body .btn-primary-custom {
-        padding: 0.38rem 0.5rem;
-        font-size: 0.68rem;
-        width: 100%;
-        max-width: none;
-        border-radius: 5px;
     }
 
     /* ── Gallery (2/row) ── */
@@ -1484,12 +1412,6 @@ img {
         margin-top: 2rem;
     }
 
-    .retiro-cta .btn-primary-custom {
-        padding: 0.65rem 1.5rem;
-        font-size: 0.82rem;
-        max-width: 280px;
-    }
-
     .retiro-line {
         height: 24px;
     }
@@ -1575,11 +1497,6 @@ img {
 
     .service-card .card-body p {
         font-size: 0.62rem;
-    }
-
-    .service-card .card-body .btn-primary-custom {
-        font-size: 0.62rem;
-        padding: 0.3rem 0.4rem;
     }
 
     .galeria-item img {
@@ -1682,11 +1599,6 @@ img {
 
     .service-card .card-body p {
         font-size: 0.58rem;
-    }
-
-    .service-card .card-body .btn-primary-custom {
-        font-size: 0.6rem;
-        padding: 0.28rem 0.35rem;
     }
 
     .service-card .card-body .tiempo {

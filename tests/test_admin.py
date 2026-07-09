@@ -33,11 +33,6 @@ def test_galeria_list(auth_client):
     assert resp.status_code == 200
 
 
-def test_factores_list(auth_client):
-    resp = auth_client.get('/admin/factores-tiempo')
-    assert resp.status_code == 200
-
-
 def test_usuarios_list(auth_client):
     resp = auth_client.get('/admin/usuarios')
     assert resp.status_code == 200

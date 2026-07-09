@@ -1,0 +1,205 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Solicitudes — Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Solicitudes Catalogo</h5>
+</div>
+
+<div class="filtros-admin">
+    <a href="?estado=pendiente" class="btn-link-custom" style="{% if filtro_estado == 'pendiente' %}background:var(--color-warning-tint);color:var(--color-warning);border-color:var(--color-warning);{% endif %}">Pendientes</a>
+    <a href="?estado=aprobada" class="btn-link-custom" style="{% if filtro_estado == 'aprobada' %}background:var(--color-success-tint);color:var(--color-success);border-color:var(--color-success);{% endif %}">Aprobadas</a>
+    <a href="?estado=rechazada" class="btn-link-custom" style="{% if filtro_estado == 'rechazada' %}background:rgba(229,72,77,0.14);color:var(--color-danger);border-color:var(--color-danger);{% endif %}">Rechazadas</a>
+    {% if filtro_estado %}<a href="{{ url_for('admin.listar_solicitudes') }}" class="btn-link-custom">Todas</a>{% endif %}
+</div>
+
+{% if solicitudes %}
+<div class="admin-card" style="padding:1rem !important;">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Tipo Vehiculo</th>
+                    <th>Segmento</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th style="width:130px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in solicitudes %}
+                <tr>
+                    <td style="font-size:0.78rem;">{{ s.created_at.strftime('%d/%m/%Y %H:%M') if s.created_at else '—' }}</td>
+                    <td>
+                        <strong>{{ s.marca_texto }}</strong>
+                        {% if s.estado == 'aprobada' and s.marca %}
+                        <br><small class="text-muted-custom" style="color:var(--color-brand) !important;">→ {{ s.marca.nombre }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ s.modelo_texto }}
+                        {% if s.estado == 'aprobada' and s.modelo %}
+                        <br><small class="text-muted-custom" style="color:var(--color-brand) !important;">→ {{ s.modelo.nombre }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ s.tipo_vehiculo.nombre if s.tipo_vehiculo else '—' }}</td>
+                    <td>{{ s.segmento.nombre if s.segmento else '—' }}</td>
+                    <td style="font-size:0.82rem;">
+                        {% if s.cliente %}
+                        {{ s.cliente.nombre }} {{ s.cliente.apellido if s.cliente.apellido else '' }}
+                        {% else %}
+                        <span class="text-muted-custom">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.estado == 'pendiente' %}
+                        <span class="badge-estado color-pendiente">Pendiente</span>
+                        {% elif s.estado == 'aprobada' %}
+                        <span class="badge-estado color-lista">Aprobada</span>
+                        {% elif s.estado == 'rechazada' %}
+                        <span class="badge-estado color-cancelada">Rechazada</span>
+                        {% else %}
+                        <span class="badge-estado badge-neutral">{{ s.estado }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2" style="gap:0.35rem;">
+                            {% if s.estado == 'pendiente' %}
+                            <button class="btn-primary" onclick="abrirModalAprobar({{ s.id }}, '{{ s.marca_texto | e }}', '{{ s.modelo_texto | e }}')">
+                                <i class="fa-solid fa-check me-1"></i> Aprobar
+                            </button>
+                            <button class="btn-danger" onclick="abrirModalRechazar({{ s.id }})">
+                                <i class="fa-solid fa-xmark me-1"></i> Rechazar
+                            </button>
+                            {% elif s.estado == 'aprobada' %}
+                            <small class="text-muted-custom">
+                                <i class="fa-solid fa-user-check me-1"></i>
+                                {{ s.usuario_aprobador.nombre if s.usuario_aprobador else 'Admin' }}
+                            </small>
+                            {% elif s.estado == 'rechazada' %}
+                            <small class="text-muted-custom" style="color:var(--color-danger) !important;">
+                                <i class="fa-solid fa-circle-info me-1"></i>
+                                {{ s.observaciones[:30] ~ '...' if s.observaciones and s.observaciones|length > 30 else (s.observaciones or 'Sin motivo') }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if paginacion.pages > 1 %}
+<div class="pagination-admin">
+    {% if paginacion.has_prev %}
+    <a href="{{ url_for('admin.listar_solicitudes', page=paginacion.prev_num, estado=filtro_estado) }}"><i class="fa-solid fa-chevron-left"></i></a>
+    {% endif %}
+    {% for p in range(1, paginacion.pages + 1) %}
+        {% if p == paginacion.page %}
+        <span class="active-page">{{ p }}</span>
+        {% elif p <= 3 or p > paginacion.pages - 3 or (p >= paginacion.page - 1 and p <= paginacion.page + 1) %}
+        <a href="{{ url_for('admin.listar_solicitudes', page=p, estado=filtro_estado) }}">{{ p }}</a>
+        {% elif p == 4 or p == paginacion.pages - 3 %}
+        <span style="border:none;">...</span>
+        {% endif %}
+    {% endfor %}
+    {% if paginacion.has_next %}
+    <a href="{{ url_for('admin.listar_solicitudes', page=paginacion.next_num, estado=filtro_estado) }}"><i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+    <span style="font-size:0.78rem;color:var(--color-text-secondary);margin-left:0.5rem;">{{ paginacion.total }} solicitudes</span>
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center text-muted-custom py-5">
+    {% if filtro_estado %}
+    No hay solicitudes en estado "{{ filtro_estado }}".
+    {% else %}
+    No hay solicitudes registradas.
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Modal Aprobar -->
+<div class="modal ead-modal fade" id="modalAprobar" tabindex="-1">
+    <div class="modal ead-modal-dialog modal-dialog-centered">
+        <form class="modal ead-modal-content" method="POST" id="formAprobar">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h6 style="font-weight:700;margin:0;">Aprobar Solicitud</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <p style="font-size:0.85rem;color:var(--color-text-secondary);margin-bottom:1rem;">
+                    Confirma o edita los datos antes de aprobar. Se creara la marca y modelo en el catalogo.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la Marca *</label>
+                    <input type="text" name="nombre_marca" id="ap_nombre_marca" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Modelo *</label>
+                    <input type="text" name="nombre_modelo" id="ap_nombre_modelo" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Pais de Origen</label>
+                    <input type="text" name="pais_origen" id="ap_pais_origen" class="form-control" placeholder="Ej: Alemania, Japon, EE.UU.">
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-primary">Confirmar Aprobacion</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Rechazar -->
+<div class="modal ead-modal fade" id="modalRechazar" tabindex="-1">
+    <div class="modal ead-modal-dialog modal-dialog-centered">
+        <form class="modal ead-modal-content" method="POST" id="formRechazar">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h6 style="font-weight:700;margin:0;">Rechazar Solicitud</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <p style="font-size:0.85rem;color:var(--color-text-secondary);margin-bottom:1rem;">
+                    Indica el motivo del rechazo.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones *</label>
+                    <textarea name="observaciones" id="rj_observaciones" class="form-control" rows="3" required
+                        placeholder="Ej: Marca o modelo ya existente, datos insuficientes..."></textarea>
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-secondary" style="border-color:var(--color-danger);color:var(--color-danger);">Confirmar Rechazo</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function abrirModalAprobar(id, marcaTexto, modeloTexto) {
+    document.getElementById('formAprobar').action = '/admin/solicitudes-catalogo/' + id + '/aprobar';
+    document.getElementById('ap_nombre_marca').value = marcaTexto;
+    document.getElementById('ap_nombre_modelo').value = modeloTexto;
+    document.getElementById('ap_pais_origen').value = '';
+    new bootstrap.Modal(document.getElementById('modalAprobar')).show();
+}
+
+function abrirModalRechazar(id) {
+    document.getElementById('formRechazar').action = '/admin/solicitudes-catalogo/' + id + '/rechazar';
+    document.getElementById('rj_observaciones').value = '';
+    new bootstrap.Modal(document.getElementById('modalRechazar')).show();
+}
+</script>
+{% endblock %}

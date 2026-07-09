@@ -21,21 +21,18 @@ def listar_horarios():
 def guardar_horarios():
     data = request.get_json(silent=True) or request.form
 
-    if data.get('_method') == 'DELETE':
-        return jsonify({'success': False, 'error': 'Use el toggle activo/inactivo para deshabilitar.'}), 400
-
     dia_semana = int(data.get('dia_semana', 0))
     hora_inicio_str = data.get('hora_inicio', '').strip()
     hora_fin_str = data.get('hora_fin', '').strip()
 
-    if not 1 <= dia_semana <= 6:
-        return jsonify({'success': False, 'error': 'Día de semana inválido (1=Lun, ..., 6=Sáb).'}), 400
+    if not 1 <= dia_semana <= 7:
+        return jsonify({'success': False, 'error': 'Dia de semana invalido (1=Lun, ..., 7=Dom).'}), 400
 
     try:
         hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
         hora_fin = datetime.strptime(hora_fin_str, '%H:%M').time()
     except (ValueError, TypeError):
-        return jsonify({'success': False, 'error': 'Formato de hora inválido. Use HH:MM.'}), 400
+        return jsonify({'success': False, 'error': 'Formato de hora invalido. Use HH:MM.'}), 400
 
     if hora_inicio >= hora_fin:
         return jsonify({'success': False, 'error': 'hora_inicio debe ser menor a hora_fin.'}), 400
@@ -52,7 +49,6 @@ def guardar_horarios():
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
             hora_fin=hora_fin,
-            capacidad_maxima=int(data.get('capacidad_maxima', 3)),
             activo=True,
         )
         db.session.add(horario)
@@ -73,18 +69,3 @@ def toggle_horario(horario_id):
     _invalidar_cache()
     estado = 'activado' if horario.activo else 'desactivado'
     return jsonify({'success': True, 'activo': horario.activo, 'mensaje': f'Horario {estado}.'})
-
-
-@admin_bp.route('/horarios/<int:horario_id>/capacidad', methods=['POST'])
-@login_required
-@role_required('admin')
-def cambiar_capacidad(horario_id):
-    data = request.get_json(silent=True) or {}
-    horario = Horario.query.get_or_404(horario_id)
-    capacidad = data.get('capacidad_maxima')
-    if not capacidad or int(capacidad) < 1:
-        return jsonify({'success': False, 'error': 'La capacidad debe ser al menos 1.'}), 400
-    horario.capacidad_maxima = int(capacidad)
-    db.session.commit()
-    _invalidar_cache()
-    return jsonify({'success': True, 'capacidad_maxima': horario.capacidad_maxima})

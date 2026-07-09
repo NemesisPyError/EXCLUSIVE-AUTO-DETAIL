@@ -1,20 +1,37 @@
+from datetime import datetime, timezone
 from extensions import db
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional, List
 
 
 class Cliente(db.Model):
     __tablename__ = 'clientes'
 
-    id            = db.Column(db.Integer, primary_key=True)
-    nombre        = db.Column(db.String(80), nullable=False)
-    apellido      = db.Column(db.String(80), nullable=False)
-    cedula        = db.Column(db.String(20), nullable=False)
-    telefono      = db.Column(db.String(20), nullable=False)
-    email         = db.Column(db.String(150), nullable=True)
-    observaciones = db.Column(db.Text, nullable=True)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(db.String(60), nullable=False)
+    apellido: Mapped[str] = mapped_column(db.String(60), nullable=False)
+    telefono: Mapped[str] = mapped_column(
+        db.String(20), unique=True, nullable=False, index=True
+    )
+    cedula: Mapped[Optional[str]] = mapped_column(db.String(20), unique=True, nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(db.String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        db.DateTime(timezone=True), nullable=True
+    )
 
-    reservas = db.relationship('Reserva', backref='cliente', lazy='dynamic')
+    vehiculos: Mapped[List['Vehiculo']] = relationship(back_populates='cliente')
+    reservas: Mapped[List['Reserva']] = relationship(back_populates='cliente')
+    testimonios: Mapped[List['Testimonio']] = relationship(back_populates='cliente')
+    solicitudes: Mapped[List['SolicitudCatalogo']] = relationship(back_populates='cliente')
 
     def __repr__(self):
         return f'<Cliente {self.nombre} {self.apellido}>'

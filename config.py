@@ -31,9 +31,6 @@ class Config:
 
     PROXY_COUNT = int(os.getenv('PROXY_COUNT', 0))
 
-    # Flask-Caching
-    # SimpleCache: en memoria del proceso, no requiere Redis (development).
-    # RedisCache: compartido entre workers Gunicorn (production).
     CACHE_TYPE = 'RedisCache' if _has_redis else 'SimpleCache'
     CACHE_REDIS_URL = os.getenv('REDIS_URL', '')
     CACHE_KEY_PREFIX = 'exclusive_autodetail:'
@@ -46,12 +43,12 @@ class DevelopmentConfig(Config):
     SESSION_COOKIE_SECURE = False
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:"
-        f"{os.getenv('DB_PASSWORD')}"
+        f"postgresql+psycopg2://"
+        f"{os.getenv('DB_USER', 'exclusive_user')}:"
+        f"{os.getenv('DB_PASSWORD', 'secure_password')}"
         f"@{os.getenv('DB_HOST', 'localhost')}:"
-        f"{os.getenv('DB_PORT', '3306')}/"
+        f"{os.getenv('DB_PORT', '5432')}/"
         f"{os.getenv('DB_NAME', 'exclusive_autodetail')}"
-        f"?charset=utf8mb4"
     )
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 5,
@@ -62,18 +59,29 @@ class DevelopmentConfig(Config):
     }
 
 
+class TestConfig(Config):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    WTF_CSRF_SECRET_KEY = 'test-csrf-secret-32chars-minimum'
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'TEST_DATABASE_URL',
+        'postgresql+psycopg2:///exclusive_autodetail_test'
+    )
+    SQLALCHEMY_ENGINE_OPTIONS = {}
+
+
 class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 
     SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{os.getenv('DB_USER')}:"
+        f"postgresql+psycopg2://"
+        f"{os.getenv('DB_USER')}:"
         f"{os.getenv('DB_PASSWORD')}"
         f"@{os.getenv('DB_HOST')}:"
         f"{os.getenv('DB_PORT')}/"
         f"{os.getenv('DB_NAME')}"
-        f"?charset=utf8mb4"
     )
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
@@ -86,6 +94,7 @@ class ProductionConfig(Config):
 
 config = {
     'development': DevelopmentConfig,
+    'testing': TestConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
 }

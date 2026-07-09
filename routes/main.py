@@ -6,7 +6,6 @@ from models.galeria_categoria import GaleriaCategoria
 from models.testimonio import Testimonio
 from models.horario import Horario
 from models.reserva import Reserva
-from models.factor_tiempo import FactorTiempo
 from services.validaciones import validar_fecha_futura
 from services.duracion import PlanificadorOcupacion
 from extensions import cache, _view_cache_key
@@ -36,7 +35,6 @@ def index():
                 'url': img.url_imagen,
                 'thumb': img.url_thumb or img.url_imagen,
                 'titulo': img.titulo,
-                'descripcion': img.descripcion or '',
             }
             for img in imgs
         ]
@@ -51,8 +49,8 @@ def index():
 @main_bp.route('/servicios')
 def servicios():
     lista = Servicio.query.filter_by(
-        activo=True
-    ).order_by(Servicio.categoria, Servicio.nombre).all()
+        activo=True, deleted_at=None
+    ).order_by(Servicio.tipo, Servicio.nombre).all()
     return render_template('servicios.html', servicios=lista)
 
 
@@ -80,16 +78,17 @@ def contacto():
 @main_bp.route('/servicios-json')
 def servicios_json():
     lista = Servicio.query.filter_by(
-        activo=True
-    ).order_by(Servicio.categoria, Servicio.nombre).all()
+        activo=True, deleted_at=None
+    ).order_by(Servicio.tipo, Servicio.nombre).all()
     return jsonify([{
         'id': s.id,
         'nombre': s.nombre,
         'descripcion': s.descripcion,
-        'categoria': s.categoria,
-        'precio': float(s.precio),
-        'tiempo_estimado_min': s.tiempo_estimado_min,
-        'tiempo_estimado': s.tiempo_estimado_formateado,
+        'tipo': s.tipo,
+        'categoria_id': s.categoria_servicio_id,
+        'requiere_inspeccion_previa': s.requiere_inspeccion_previa,
+        'requiere_varios_dias': s.requiere_varios_dias,
+        'dias_bloqueo': s.dias_bloqueo,
     } for s in lista])
 
 
@@ -131,25 +130,3 @@ def horarios_disponibles():
         'duracion_considerada_min': duracion_min,
         'horarios': slots,
     })
-
-
-@main_bp.route('/factores-tiempo-json')
-@cache.cached(timeout=3600, key_prefix=lambda: _view_cache_key('/factores-tiempo-json', include_qs=True))
-def factores_tiempo_json():
-    tipo = request.args.get('tipo', '').strip()
-    query = FactorTiempo.query.filter_by(activo=True)
-    if tipo:
-        query = query.filter_by(tipo=tipo)
-    factores = query.order_by(FactorTiempo.tipo, FactorTiempo.orden, FactorTiempo.nombre).all()
-
-    agrupados = {}
-    for f in factores:
-        if f.tipo not in agrupados:
-            agrupados[f.tipo] = []
-        agrupados[f.tipo].append({
-            'id': f.id,
-            'nombre': f.nombre,
-            'minutos_adicionales': f.minutos_adicionales,
-        })
-
-    return jsonify({'success': True, 'factores': agrupados})

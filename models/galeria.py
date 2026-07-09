@@ -1,21 +1,33 @@
+from datetime import datetime, timezone
 from extensions import db
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey
+from typing import Optional
 
 
 class Galeria(db.Model):
     __tablename__ = 'galeria'
 
-    id            = db.Column(db.Integer, primary_key=True)
-    titulo        = db.Column(db.String(120), nullable=False)
-    descripcion   = db.Column(db.Text, nullable=True)
-    url_imagen    = db.Column(db.String(255), nullable=False)
-    url_thumb     = db.Column(db.String(255), nullable=True)
-    tipo          = db.Column(db.String(120), nullable=False, default='')   # legacy: nombre de categoría
-    categoria_id  = db.Column(db.Integer, db.ForeignKey('galeria_categoria.id', ondelete='CASCADE'), nullable=True, index=True)
-    activo        = db.Column(db.Boolean, default=True)
-    orden         = db.Column(db.Integer, nullable=False, default=0)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    categoria_id: Mapped[int] = mapped_column(
+        ForeignKey('galeria_categorias.id'), nullable=False
+    )
+    titulo: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
+    url_imagen: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    url_thumb: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    orden: Mapped[int] = mapped_column(db.SmallInteger, default=0, nullable=False)
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    categoria: Mapped['GaleriaCategoria'] = relationship(back_populates='imagenes')
 
     def __repr__(self):
-        return f'<Galeria {self.titulo}>'
-
+        return f'<Galeria {self.titulo or self.id}>'

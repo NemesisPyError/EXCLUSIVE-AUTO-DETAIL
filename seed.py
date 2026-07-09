@@ -1,22 +1,27 @@
 """
-Seed script --- Puebla la base de datos con datos iniciales.
+Seed script — Puebla la base de datos con datos iniciales.
 Uso: python seed.py
 """
+from datetime import time
 from app import create_app
 from extensions import db
+from models.segmento import Segmento
+from models.tipo_vehiculo import TipoVehiculo
+from models.nivel_suciedad import NivelSuciedad
+from models.categoria_servicio import CategoriaServicio
 from models.servicio import Servicio
-from models.estado_reserva import EstadoReserva
+from models.precio_servicio import PrecioServicio
+from models.tipo_box import TipoBox
+from models.box import Box
+from models.box_tipo_vehiculo import BoxTipoVehiculo
 from models.horario import Horario
+from models.estado_reserva import EstadoReserva
 from models.usuario import Usuario
 from models.galeria import Galeria
-from models.factor_tiempo import FactorTiempo
-from models.tipo_vehiculo import TipoVehiculo
-from models.categoria_servicio import CategoriaServicio
-from models.tipo_lavado import TipoLavado
-from models.subtipo_lavado import SubTipoLavado
-from models.tipo_detallado import TipoDetallado
-from models.regla_precio import ReglaPrecio
-from datetime import time
+from models.galeria_categoria import GaleriaCategoria
+from models.marca import Marca
+from models.modelo_vehiculo import ModeloVehiculo
+from models.servicio_tipo_vehiculo import ServicioTipoVehiculo
 
 app = create_app()
 
@@ -27,302 +32,474 @@ with app.app_context():
 
     print("Sembrando datos iniciales...")
 
-    # --- Estados de reserva ---
-    estados = [
-        ('Pendiente', '#ffc107', 1),
-        ('Confirmada', '#0d6efd', 2),
-        ('Vehiculo recibido', '#17a2b8', 3),
-        ('En proceso', '#6f42c1', 4),
-        ('Lavado terminado', '#fd7e14', 5),
-        ('Esperando retiro', '#198754', 6),
-        ('Finalizada', '#0dcaf0', 7),
-        ('Cancelada', '#dc3545', 8),
+    # --- Segmentos ---
+    segmentos_data = [
+        ('Pequeño', 'pequenio', 'Vehiculos de dimensiones reducidas', 1),
+        ('Mediano', 'mediano', 'Vehiculos de tamano estandar', 2),
+        ('Grande', 'grande', 'Vehiculos de gran porte', 3),
+        ('Extra grande', 'extra-grande', 'Furgones, vans, camiones, lanchas', 4),
     ]
-    for nombre, color, orden in estados:
-        db.session.add(EstadoReserva(nombre=nombre, color_badge=color, orden=orden))
+    seg_dict = {}
+    for nombre, slug, desc, orden in segmentos_data:
+        s = Segmento(nombre=nombre, slug=slug, descripcion=desc, orden=orden)
+        db.session.add(s)
+        seg_dict[slug] = s
+    db.session.flush()
 
-    # --- Servicios (backward compat, old model) ---
-    servicios = [
-        ('Lavado Express', 'Lavado exterior rapido con shampoo neutro, secado y neblinado de neumaticos.',
-         'lavado_vehiculo', 5000.00, 20),
-        ('Lavado Detallado', 'Lavado exterior e interior completo, aspirado profundo, lavado de tapizados y plasticos.',
-         'lavado_vehiculo', 12000.00, 60),
-        ('Limpieza Integral', 'Lavado Detallado + limpieza de motor, desinfeccion interna y tratamiento de cueros.',
-         'lavado_vehiculo', 20000.00, 120),
-        ('Pulido Comercial', 'Pulido mecanico de una etapa, abrillantado y encerado con sellante de alta duracion.',
-         'tratamiento_pintura', 25000.00, 180),
-        ('Pulido Tecnico', 'Pulido de dos etapas con correccion de pintura, lustre final y recubrimiento sellador.',
-         'tratamiento_pintura', 40000.00, 300),
-        ('Revestimiento Ceramico', 'Aplicacion de recubrimiento ceramico de 9H de dureza, proteccion contra rayos UV y quimicos.',
-         'tratamiento_pintura', 60000.00, 480),
-        ('Remocion de Lluvia Acida', 'Tratamiento quimico-mecanico para eliminar manchas de lluvia acida de la pintura y cristales.',
-         'tratamiento_pintura', 15000.00, 120),
-        ('Lavado Express de Motos', 'Lavado exterior rapido, cadena y lubricacion basica.',
-         'lavado_moto', 3000.00, 20),
-        ('Lavado Detallado de Motos', 'Lavado completo, pulido de carenados, tratamiento de cromados y acondicionamiento de cadena.',
-         'lavado_moto', 8000.00, 60),
-        ('Retiro y Entrega del Vehiculo', 'Nos encargamos de retirar tu vehiculo en la direccion que nos indiques.',
-         'retiro_entrega', 0.00, 0),
+    # --- Tipos de Vehiculo ---
+    tipos_data = [
+        ('Moto', 'moto', 'Motocicleta de cualquier cilindrada', 'fa-motorcycle', 1),
+        ('Auto', 'auto', 'Sedan, hatchback, coupe', 'fa-car', 2),
+        ('SUV', 'suv', 'Crossover, todoterreno', 'fa-truck', 3),
+        ('Pickup/Camioneta', 'pickup', 'Pickup mediana y grande', 'fa-truck-pickup', 4),
+        ('Furgon', 'furgon', 'Furgoneta de carga cerrada', 'fa-van-shuttle', 5),
+        ('Van/Minivan', 'van', 'Vehiculo de pasajeros multi-fila', 'fa-van', 6),
+        ('Cuatrimoto', 'cuatrimoto', 'ATV recreativo o utilitario', 'fa-motorcycle', 7),
+        ('Jet Ski', 'jetski', 'Moto acuatica personal', 'fa-water', 8),
+        ('Lancha/Bote', 'lancha', 'Embarcacion menor, lancha deportiva', 'fa-ship', 9),
+        ('Camion', 'camion', 'Camion liviano y mediano', 'fa-truck', 10),
     ]
-    for nombre, desc, cat, precio, tiempo in servicios:
-        db.session.add(Servicio(
-            nombre=nombre, descripcion=desc, categoria=cat,
-            precio=precio, tiempo_estimado_min=tiempo, activo=True
+    tv_dict = {}
+    for nombre, slug, desc, icono, orden in tipos_data:
+        tv = TipoVehiculo(nombre=nombre, slug=slug, descripcion=desc, icono=icono, orden=orden)
+        db.session.add(tv)
+        tv_dict[slug] = tv
+    db.session.flush()
+
+    # --- Niveles de Suciedad ---
+    niveles_data = [
+        ('Normal', 'Suciedad leve, polvo superficial, uso urbano', 1),
+        ('Alta', 'Barro visible, suciedad acumulada', 2),
+        ('Extrema', 'Barro abundante, grasa, arena, tierra de camino rural', 3),
+    ]
+    nv_dict = {}
+    for nombre, desc, orden in niveles_data:
+        n = NivelSuciedad(nombre=nombre, descripcion=desc, orden=orden)
+        db.session.add(n)
+        nv_dict[nombre.lower()] = n
+    db.session.flush()
+
+    # --- Estados de Reserva ---
+    estados_data = [
+        ('Pendiente', '#6c757d', 1, False, False),
+        ('Confirmada', '#0d6efd', 2, False, False),
+        ('Recibida', '#198754', 3, False, False),
+        ('En Proceso', '#fd7e14', 4, False, False),
+        ('Lista', '#0dcaf0', 5, False, False),
+        ('Entregada', '#198754', 6, True, False),
+        ('Cancelada', '#dc3545', 7, True, True),
+    ]
+    for nombre, color, orden, terminal, cancelacion in estados_data:
+        db.session.add(EstadoReserva(
+            nombre=nombre, color_badge=color, orden=orden,
+            es_terminal=terminal, es_cancelacion=cancelacion,
+        ))
+    db.session.flush()
+
+    # --- Categorias de Servicio ---
+    cats_serv_data = [
+        ('Lavado', 'lavado', 1),
+        ('Detallado', 'detallado', 2),
+        ('Tratamiento', 'tratamiento', 3),
+        ('Especial', 'especial', 4),
+        ('Adicional', 'adicional', 5),
+        ('Paquete', 'paquete', 6),
+    ]
+    cat_dict = {}
+    for nombre, slug, orden in cats_serv_data:
+        c = CategoriaServicio(nombre=nombre, slug=slug, orden=orden)
+        db.session.add(c)
+        cat_dict[slug] = c
+    db.session.flush()
+
+    # --- Servicios Base ---
+    servicios_base = [
+        ('Lavado Exterior', 'lavado-exterior', 'Lavado exterior con shampoo neutro, secado y neblinado de neumaticos', 'base', cat_dict['lavado'].id),
+        ('Lavado Interior', 'lavado-interior', 'Lavado interior, aspirado, limpieza de plasticos y vidrios', 'base', cat_dict['lavado'].id),
+        ('Lavado Completo', 'lavado-completo', 'Lavado exterior + interior completo', 'base', cat_dict['lavado'].id),
+        ('Detallado Interior', 'detallado-interior', 'Detallado interior profundo: tapizados, cueros, alfombras, techo', 'base', cat_dict['detallado'].id),
+        ('Detallado Exterior', 'detallado-exterior', 'Correccion de pintura, pulido, sellado', 'base', cat_dict['detallado'].id),
+        ('Detallado Completo', 'detallado-completo', 'Detallado interior + exterior completo', 'base', cat_dict['detallado'].id),
+        ('Pulido', 'pulido', 'Pulido mecanico con correccion de pintura', 'base', cat_dict['tratamiento'].id),
+        ('Tratamiento Ceramico', 'tratamiento-ceramico', 'Aplicacion de recubrimiento ceramico 9H', 'base', cat_dict['tratamiento'].id),
+        ('Tratamiento Acrilico', 'tratamiento-acrilico', 'Sellador acrilico de alta duracion', 'base', cat_dict['tratamiento'].id),
+        ('Lavado de Motor', 'lavado-motor', 'Lavado y desengrase de motor', 'base', cat_dict['especial'].id),
+    ]
+
+    svc_dict = {}
+    for nombre, slug, desc, tipo, cat_id in servicios_base:
+        s = Servicio(
+            nombre=nombre, slug=slug, descripcion=desc,
+            tipo=tipo, categoria_servicio_id=cat_id,
+            requiere_inspeccion_previa=('Ceramico' in nombre or 'Pulido' in nombre),
+            requiere_varios_dias=('Ceramico' in nombre),
+            dias_bloqueo=2 if 'Ceramico' in nombre else None,
+        )
+        db.session.add(s)
+        svc_dict[slug] = s
+    db.session.flush()
+
+    # --- Servicios Adicionales ---
+    adicionales_data = [
+        ('Desinfeccion con Ozono', 'desinfeccion-ozono', 'Eliminacion de olores y bacterias con ozono'),
+        ('Restauracion de Faros', 'restauracion-faros', 'Pulido y sellado de faros opacos'),
+        ('Limpieza de Tapizado Profunda', 'limpieza-tapizado', 'Extraccion profunda de suciedad de butacas y alfombras'),
+        ('Aromatizante', 'aromatizante', 'Aplicacion de fragancia interior'),
+        ('Retiro a Domicilio', 'retiro-domicilio', 'Buscar el vehiculo en ubicacion del cliente'),
+        ('Entrega a Domicilio', 'entrega-domicilio', 'Llevar el vehiculo a ubicacion del cliente'),
+    ]
+    add_dict = {}
+    for nombre, slug, desc in adicionales_data:
+        s = Servicio(
+            nombre=nombre, slug=slug, descripcion=desc,
+            tipo='adicional', categoria_servicio_id=cat_dict['adicional'].id,
+        )
+        db.session.add(s)
+        add_dict[slug] = s
+    db.session.flush()
+
+    # --- Paquetes ---
+    paquetes_data = [
+        ('Express', 'paquete-express', 'Lavado Exterior + Aromatizante', ['lavado-exterior'], 'lavado-exterior'),
+        ('Full', 'paquete-full', 'Lavado Completo + Aromatizante', ['lavado-completo'], 'lavado-completo'),
+        ('Premium', 'paquete-premium', 'Detallado Completo + Desinfeccion Ozono', ['detallado-completo'], 'detallado-completo'),
+        ('Proteccion Total', 'paquete-proteccion-total', 'Pulido + Tratamiento Ceramico', ['pulido'], 'pulido'),
+        ('Integral', 'paquete-integral', 'Detallado Completo + Lavado de Motor + Desinfeccion Ozono', ['detallado-completo'], 'detallado-completo'),
+    ]
+    pkg_dict = {}
+    for nombre, slug, desc, componentes, principal_slug in paquetes_data:
+        s = Servicio(
+            nombre=nombre, slug=slug, descripcion=desc,
+            tipo='paquete', categoria_servicio_id=cat_dict['paquete'].id,
+            requiere_varios_dias=('Proteccion' in nombre),
+            dias_bloqueo=2 if 'Proteccion' in nombre else None,
+        )
+        db.session.add(s)
+        pkg_dict[slug] = s
+    db.session.flush()
+
+    # --- Precios y Duraciones (matriz simplificada) ---
+    # Combinaciones: servicio x tipo_vehiculo x segmento x nivel_suciedad
+    precios_config = {
+        'lavado-exterior': {
+            'moto':     {'pequenio': (15000, 20), 'mediano': (20000, 25)},
+            'auto':     {'pequenio': (25000, 25), 'mediano': (30000, 30), 'grande': (35000, 35)},
+            'suv':      {'mediano': (35000, 35), 'grande': (40000, 40)},
+            'pickup':   {'mediano': (35000, 35), 'grande': (40000, 40)},
+            'furgon':   {'mediano': (35000, 40), 'grande': (40000, 45)},
+            'van':      {'mediano': (40000, 45), 'grande': (45000, 50)},
+            'cuatrimoto': {'pequenio': (15000, 20)},
+            'jetski':   {'pequenio': (15000, 20)},
+            'lancha':   {'grande': (50000, 60), 'extra-grande': (60000, 75)},
+            'camion':   {'grande': (50000, 60), 'extra-grande': (60000, 75)},
+        },
+        'lavado-interior': {
+            'auto':     {'pequenio': (30000, 30), 'mediano': (35000, 35), 'grande': (40000, 45)},
+            'suv':      {'mediano': (40000, 45), 'grande': (45000, 55)},
+            'pickup':   {'mediano': (40000, 45), 'grande': (45000, 55)},
+            'furgon':   {'mediano': (45000, 50), 'grande': (50000, 60)},
+            'van':      {'mediano': (50000, 60), 'grande': (55000, 70)},
+            'camion':   {'grande': (60000, 75), 'extra-grande': (70000, 90)},
+        },
+        'lavado-completo': {
+            'moto':     {'pequenio': (25000, 30), 'mediano': (35000, 40)},
+            'auto':     {'pequenio': (40000, 45), 'mediano': (50000, 55), 'grande': (60000, 70)},
+            'suv':      {'mediano': (60000, 70), 'grande': (70000, 85)},
+            'pickup':   {'mediano': (60000, 70), 'grande': (70000, 85)},
+            'furgon':   {'mediano': (65000, 75), 'grande': (75000, 90)},
+            'van':      {'mediano': (75000, 90), 'grande': (85000, 105)},
+            'cuatrimoto': {'pequenio': (25000, 30)},
+            'jetski':   {'pequenio': (25000, 30)},
+            'lancha':   {'grande': (90000, 110), 'extra-grande': (110000, 140)},
+            'camion':   {'grande': (90000, 110), 'extra-grande': (110000, 140)},
+        },
+        'detallado-interior': {
+            'auto':     {'pequenio': (100000, 120), 'mediano': (130000, 150), 'grande': (160000, 190)},
+            'suv':      {'mediano': (150000, 180), 'grande': (180000, 220)},
+            'pickup':   {'mediano': (150000, 180), 'grande': (180000, 220)},
+            'furgon':   {'mediano': (170000, 210), 'grande': (200000, 250)},
+            'van':      {'mediano': (190000, 240), 'grande': (220000, 280)},
+            'lancha':   {'grande': (250000, 300), 'extra-grande': (300000, 360)},
+        },
+        'detallado-exterior': {
+            'auto':     {'pequenio': (120000, 150), 'mediano': (150000, 180), 'grande': (180000, 220)},
+            'suv':      {'mediano': (170000, 210), 'grande': (200000, 250)},
+            'pickup':   {'mediano': (170000, 210), 'grande': (200000, 250)},
+            'furgon':   {'mediano': (190000, 230), 'grande': (220000, 270)},
+            'van':      {'mediano': (210000, 260), 'grande': (240000, 300)},
+            'lancha':   {'grande': (280000, 340), 'extra-grande': (330000, 400)},
+        },
+        'detallado-completo': {
+            'auto':     {'pequenio': (180000, 240), 'mediano': (220000, 300), 'grande': (260000, 360)},
+            'suv':      {'mediano': (250000, 340), 'grande': (290000, 400)},
+            'pickup':   {'mediano': (250000, 340), 'grande': (290000, 400)},
+            'furgon':   {'mediano': (280000, 380), 'grande': (320000, 440)},
+            'van':      {'mediano': (310000, 420), 'grande': (350000, 480)},
+            'lancha':   {'grande': (400000, 520), 'extra-grande': (460000, 600)},
+        },
+        'pulido': {
+            'auto':     {'pequenio': (150000, 180), 'mediano': (200000, 240), 'grande': (250000, 300)},
+            'suv':      {'mediano': (230000, 280), 'grande': (280000, 340)},
+            'pickup':   {'mediano': (230000, 280), 'grande': (280000, 340)},
+            'furgon':   {'mediano': (260000, 310), 'grande': (310000, 370)},
+        },
+        'tratamiento-ceramico': {
+            'auto':     {'pequenio': (300000, 480), 'mediano': (400000, 600), 'grande': (500000, 720)},
+            'suv':      {'mediano': (450000, 660), 'grande': (550000, 780)},
+            'pickup':   {'mediano': (450000, 660), 'grande': (550000, 780)},
+        },
+        'tratamiento-acrilico': {
+            'auto':     {'pequenio': (200000, 300), 'mediano': (260000, 360), 'grande': (320000, 420)},
+            'suv':      {'mediano': (290000, 400), 'grande': (350000, 480)},
+            'pickup':   {'mediano': (290000, 400), 'grande': (350000, 480)},
+        },
+        'lavado-motor': {
+            'auto':     {'pequenio': (30000, 30), 'mediano': (40000, 40), 'grande': (50000, 50)},
+            'suv':      {'mediano': (50000, 50), 'grande': (60000, 60)},
+            'pickup':   {'mediano': (50000, 50), 'grande': (60000, 60)},
+            'camion':   {'grande': (80000, 90), 'extra-grande': (100000, 120)},
+        },
+        'desinfeccion-ozono': {
+            'auto': {'pequenio': (15000, 15), 'mediano': (15000, 15), 'grande': (15000, 15)},
+            'suv':  {'mediano': (15000, 15), 'grande': (15000, 15)},
+            'pickup': {'mediano': (15000, 15), 'grande': (15000, 15)},
+            'van':  {'mediano': (20000, 20), 'grande': (20000, 20)},
+        },
+        'restauracion-faros': {
+            'auto':     {'pequenio': (25000, 30), 'mediano': (25000, 30), 'grande': (25000, 30)},
+            'suv':      {'mediano': (30000, 35), 'grande': (30000, 35)},
+            'pickup':   {'mediano': (30000, 35), 'grande': (30000, 35)},
+        },
+        'limpieza-tapizado': {
+            'auto':     {'pequenio': (35000, 40), 'mediano': (40000, 45), 'grande': (45000, 55)},
+            'suv':      {'mediano': (45000, 55), 'grande': (50000, 65)},
+            'pickup':   {'mediano': (45000, 55), 'grande': (50000, 65)},
+            'van':      {'mediano': (55000, 70), 'grande': (60000, 80)},
+        },
+        'retiro-domicilio': {
+            'auto':     {'pequenio': (15000, 0), 'mediano': (15000, 0), 'grande': (15000, 0)},
+            'suv':      {'mediano': (20000, 0), 'grande': (20000, 0)},
+            'pickup':   {'mediano': (20000, 0), 'grande': (20000, 0)},
+            'van':      {'mediano': (25000, 0), 'grande': (25000, 0)},
+        },
+        'entrega-domicilio': {
+            'auto':     {'pequenio': (15000, 0), 'mediano': (15000, 0), 'grande': (15000, 0)},
+            'suv':      {'mediano': (20000, 0), 'grande': (20000, 0)},
+            'pickup':   {'mediano': (20000, 0), 'grande': (20000, 0)},
+            'van':      {'mediano': (25000, 0), 'grande': (25000, 0)},
+        },
+        'paquete-express': {
+            'auto':     {'pequenio': (35000, 30), 'mediano': (40000, 35)},
+            'suv':      {'mediano': (45000, 40)},
+            'pickup':   {'mediano': (45000, 40)},
+        },
+        'paquete-full': {
+            'auto':     {'pequenio': (55000, 50), 'mediano': (65000, 60), 'grande': (75000, 75)},
+            'suv':      {'mediano': (75000, 75), 'grande': (85000, 90)},
+            'pickup':   {'mediano': (75000, 75), 'grande': (85000, 90)},
+        },
+        'paquete-premium': {
+            'auto':     {'pequenio': (190000, 255), 'mediano': (230000, 315), 'grande': (270000, 375)},
+            'suv':      {'mediano': (260000, 355), 'grande': (300000, 415)},
+            'pickup':   {'mediano': (260000, 355), 'grande': (300000, 415)},
+        },
+        'paquete-proteccion-total': {
+            'auto':     {'pequenio': (400000, 660), 'mediano': (500000, 840), 'grande': (600000, 1020)},
+            'suv':      {'mediano': (550000, 940), 'grande': (650000, 1120)},
+            'pickup':   {'mediano': (550000, 940), 'grande': (650000, 1120)},
+        },
+        'paquete-integral': {
+            'auto':     {'pequenio': (210000, 285), 'mediano': (260000, 355), 'grande': (310000, 425)},
+            'suv':      {'mediano': (300000, 405), 'grande': (350000, 475)},
+            'pickup':   {'mediano': (300000, 405), 'grande': (350000, 475)},
+        },
+    }
+
+    # Multiplicadores de suciedad para cada nivel
+    suciedad_multiplicadores = {
+        'normal': {'precio': 1.0, 'duracion': 1.0},
+        'alta': {'precio': 1.3, 'duracion': 1.3},
+        'extrema': {'precio': 1.6, 'duracion': 1.6},
+    }
+
+    for svc_slug, tipos in precios_config.items():
+        svc = svc_dict.get(svc_slug) or add_dict.get(svc_slug) or pkg_dict.get(svc_slug)
+        if not svc:
+            continue
+        for tv_slug, segmentos in tipos.items():
+            tv = tv_dict.get(tv_slug)
+            if not tv:
+                continue
+            for seg_slug, (precio_base, duracion_base) in segmentos.items():
+                seg = seg_dict.get(seg_slug)
+                if not seg:
+                    continue
+                for nv_name, mult in suciedad_multiplicadores.items():
+                    nv = nv_dict.get(nv_name)
+                    if not nv:
+                        continue
+                    precio = int(precio_base * mult['precio'])
+                    duracion = max(1, int(duracion_base * mult['duracion']))
+                    db.session.add(PrecioServicio(
+                        servicio_id=svc.id,
+                        tipo_vehiculo_id=tv.id,
+                        segmento_id=seg.id,
+                        nivel_suciedad_id=nv.id,
+                        precio=precio,
+                        duracion_minutos=duracion,
+                    ))
+    db.session.flush()
+
+    # --- Compatibilidades Servicio-Tipo de Vehiculo ---
+    for svc_slug, tipos in precios_config.items():
+        svc = svc_dict.get(svc_slug) or add_dict.get(svc_slug) or pkg_dict.get(svc_slug)
+        if not svc:
+            continue
+        for tv_slug in tipos:
+            tv = tv_dict.get(tv_slug)
+            if not tv:
+                continue
+            exists = ServicioTipoVehiculo.query.filter_by(
+                servicio_id=svc.id, tipo_vehiculo_id=tv.id
+            ).first()
+            if not exists:
+                db.session.add(ServicioTipoVehiculo(
+                    servicio_id=svc.id, tipo_vehiculo_id=tv.id
+                ))
+    db.session.flush()
+
+    # --- Tipos de Box ---
+    tipos_box_data = [
+        ('Estandar', 'Box para autos, SUVs y pickups'),
+        ('Grande', 'Box para vans, furgones y camiones'),
+        ('Moto', 'Box para motos y cuatrimotos'),
+        ('Acuatico', 'Box con desague para jet skis y lanchas'),
+        ('Exterior', 'Box al aire libre para lavados rapidos'),
+    ]
+    tb_dict = {}
+    for nombre, desc in tipos_box_data:
+        tb = TipoBox(nombre=nombre, descripcion=desc)
+        db.session.add(tb)
+        tb_dict[nombre.lower()] = tb
+    db.session.flush()
+
+    # --- Boxes ---
+    boxes_crear = [
+        ('Box 1', 'estandar', 1),
+        ('Box 2', 'estandar', 2),
+        ('Box 3', 'grande', 3),
+        ('Box 4', 'moto', 4),
+    ]
+    for nombre, tb_nombre, orden in boxes_crear:
+        db.session.add(Box(
+            tipo_box_id=tb_dict[tb_nombre].id,
+            nombre=nombre, activo=True, orden=orden,
         ))
 
-    # --- Factores de Tiempo (legacy) ---
-    factores_suciedad = [
-        ('Leve', 0), ('Media', 15), ('Alta', 30), ('Extrema', 60),
-    ]
-    for i, (nombre, minutos) in enumerate(factores_suciedad):
-        db.session.add(FactorTiempo(
-            tipo='suciedad', nombre=nombre,
-            minutos_adicionales=minutos, orden=i + 1, activo=True
+    # --- Horarios (Lunes a Sabado, 07:00 a 18:00) ---
+    for dia in range(1, 7):
+        db.session.add(Horario(
+            dia_semana=dia, hora_inicio=time(7, 0), hora_fin=time(18, 0),
+            activo=True,
         ))
 
-    factores_condicion = [
-        ('Mucho barro', 15), ('Arena', 10), ('Pelo de mascotas', 20),
-        ('Interior muy sucio', 25), ('Manchas dificiles', 30),
-        ('Restos de comida', 15), ('Lluvia acida', 20),
-    ]
-    for i, (nombre, minutos) in enumerate(factores_condicion):
-        db.session.add(FactorTiempo(
-            tipo='condicion', nombre=nombre,
-            minutos_adicionales=minutos, orden=i + 1, activo=True
-        ))
-
-    # --- Usuario admin ---
-    admin = Usuario(nombre='Administrador', email='admin@exclusiveautodetail.com', rol='admin', activo=True)
+    # --- Usuario Admin ---
+    admin = Usuario(
+        nombre='Administrador', apellido='Sistema',
+        email='admin@exclusiveautodetail.com', rol='admin', activo=True,
+    )
     admin.set_password('Admin1234!')
     db.session.add(admin)
 
-    # --- Horarios (lunes a sabado, 07:00 a 17:00, capacidad 3) ---
-    for dia in range(1, 7):
-        db.session.add(Horario(
-            dia_semana=dia, hora_inicio=time(7, 0), hora_fin=time(17, 0),
-            capacidad_maxima=3, activo=True
-        ))
-
-    # --- Galeria (categorias placeholder) ---
+    # --- Galeria (placeholder) ---
     galeria_cats = [
         'Antes y Despues', 'Resultado Pulido', 'Revestimiento Ceramico',
         'Detalle Interior', 'Lavado Profundo', 'Brillo Final',
     ]
-    # WebP images mas utilizadas como placeholder (ya existen en static/img/galeria/)
     _webp_placeholders = [
         '/static/img/galeria/galeria_8fff38584b.webp',
         '/static/img/galeria/galeria_169b69de2a.webp',
         '/static/img/galeria/galeria_412ee87fc8.webp',
     ]
-    for orden, cat in enumerate(galeria_cats, start=1):
+    for orden, cat_nombre in enumerate(galeria_cats, start=1):
+        gc = GaleriaCategoria(nombre=cat_nombre, orden=orden, activo=True)
+        db.session.add(gc)
+        db.session.flush()
         db.session.add(Galeria(
-            titulo=cat, descripcion=None,
+            categoria_id=gc.id,
+            titulo=cat_nombre,
             url_imagen=_webp_placeholders[(orden - 1) % len(_webp_placeholders)],
-            tipo=cat, activo=True, orden=orden
+            url_thumb=_webp_placeholders[(orden - 1) % len(_webp_placeholders)],
+            orden=1, activo=True,
         ))
 
-    # ---------------------------------------------------------------
-    # NUEVA ARQUITECTURA FASE 2
-    # ---------------------------------------------------------------
-
-    # --- Tipos de Vehiculo ---
-    tipos_vehiculo = [
-        ('Auto', 'auto', 'fa-solid fa-car', 1),
-        ('SUV / Camioneta', 'suv-camioneta', 'fa-solid fa-truck', 2),
-        ('Moto baja cilindrada', 'moto-baja', 'fa-solid fa-motorcycle', 3),
-        ('Moto alta cilindrada', 'moto-alta', 'fa-solid fa-motorcycle', 4),
-    ]
-    tipos_dict = {}
-    for nombre, slug, icono, orden in tipos_vehiculo:
-        tv = TipoVehiculo(nombre=nombre, slug=slug, icono=icono, orden=orden, activo=True)
-        db.session.add(tv)
-        tipos_dict[slug] = tv
-
-    db.session.flush()
-
-    # --- Categorias de Servicio ---
-    categorias_data = [
-        ('Lavado', 'lavado', True, False, True, 1),
-        ('Detallado', 'detallado', False, False, True, 2),
-        ('Integral', 'integral', False, True, False, 3),
-        ('Tratamientos Especiales', 'tratamientos', False, False, False, 4),
-    ]
-    cats_dict = {}
-    for nombre, slug, usa_nivel, permite_md, tiene_st, orden in categorias_data:
-        cat = CategoriaServicio(
-            nombre=nombre, slug=slug,
-            usa_nivel_suciedad=usa_nivel,
-            permite_multidias=permite_md,
-            tiene_subtipos=tiene_st,
-            orden=orden, activo=True
-        )
-        db.session.add(cat)
-        cats_dict[slug] = cat
-
-    db.session.flush()
-
-    # --- Tipos de Lavado (Normal, Alta, Extrema) ---
-    lavados_data = [
-        ('Normal', 'normal', False, False, 1),
-        ('Alta', 'alta', True, True, 2),
-        ('Extrema', 'extrema', True, True, 3),
-    ]
-    lavados_dict = {}
-    for nombre, slug, cerrado, insp, orden in lavados_data:
-        tl = TipoLavado(
-            nombre=nombre, slug=slug,
-            es_cerrado=cerrado, requiere_inspeccion=insp,
-            orden=orden, activo=True
-        )
-        db.session.add(tl)
-        lavados_dict[slug] = tl
-
-    db.session.flush()
-
-    # --- SubTipos de Lavado (Interior, Exterior, Completo) - solo para Normal ---
-    subtipos_data = [
-        ('Interior', 'interior', 1),
-        ('Exterior', 'exterior', 2),
-        ('Completo', 'completo', 3),
-    ]
-    subtipos_dict = {}
-    for nombre, slug, orden in subtipos_data:
-        st = SubTipoLavado(
-            tipo_lavado_id=lavados_dict['normal'].id,
-            nombre=nombre, slug=slug,
-            orden=orden, activo=True
-        )
-        db.session.add(st)
-        subtipos_dict[slug] = st
-
-    db.session.flush()
-
-    # --- Tipos de Detallado ---
-    detallado_data = [
-        ('Detallado Interior', 'detallado-interior', 1),
-        ('Detallado Exterior', 'detallado-exterior', 2),
-        ('Detallado Completo', 'detallado-completo', 3),
-    ]
-    detallados_dict = {}
-    for nombre, slug, orden in detallado_data:
-        td = TipoDetallado(nombre=nombre, slug=slug, orden=orden, activo=True)
-        db.session.add(td)
-        detallados_dict[slug] = td
-
-    db.session.flush()
-
-    # --- Reglas de Precio (matrix) ---
-    # Precios base por combinacion: (categoria, vehiculo, tipo_lavado, subtipo, precio, tiempo)
-    # Para NORMAL: precio_fijo
-    # Para ALTA/EXTREMA: precio_estimado + es_precio_estimado=True
-
-    reglas = []
-
-    lav_normal_precios = {
-        'auto': {'interior': (25000, 30), 'exterior': (20000, 25), 'completo': (40000, 50)},
-        'suv-camioneta': {'interior': (35000, 40), 'exterior': (28000, 35), 'completo': (55000, 70)},
-        'moto-baja': {'interior': (10000, 20), 'exterior': (8000, 15), 'completo': (15000, 30)},
-        'moto-alta': {'interior': (15000, 25), 'exterior': (12000, 20), 'completo': (22000, 40)},
+    # --- Catalogo de Marcas y Modelos (resumido) ---
+    import re
+    marcas_modelos = {
+        'Toyota': {'pais': 'Japon', 'modelos': [
+            'Corolla', 'Hilux', 'Yaris', 'RAV4', 'Camry', 'Fortuner',
+            'Land Cruiser', 'Etios', 'Hiace', 'Prius',
+        ]},
+        'Hyundai': {'pais': 'Corea del Sur', 'modelos': [
+            'HB20', 'Creta', 'Tucson', 'Santa Fe', 'i30', 'Elantra',
+        ]},
+        'Kia': {'pais': 'Corea del Sur', 'modelos': [
+            'Picanto', 'Rio', 'Sportage', 'Sorento', 'Carnival',
+        ]},
+        'Chevrolet': {'pais': 'Estados Unidos', 'modelos': [
+            'Onix', 'Tracker', 'S10', 'Spin', 'Cruze',
+        ]},
+        'Volkswagen': {'pais': 'Alemania', 'modelos': [
+            'Gol', 'Polo', 'Virtus', 'Nivus', 'T-Cross', 'Amarok',
+        ]},
+        'Ford': {'pais': 'Estados Unidos', 'modelos': [
+            'Fiesta', 'Focus', 'Ranger', 'Bronco', 'Mustang',
+        ]},
+        'Nissan': {'pais': 'Japon', 'modelos': [
+            'March', 'Versa', 'Kicks', 'Frontier', 'X-Trail',
+        ]},
+        'Honda': {'pais': 'Japon', 'modelos': [
+            'Civic', 'City', 'HR-V', 'CR-V', 'Fit',
+        ]},
+        'Fiat': {'pais': 'Italia', 'modelos': [
+            'Mobi', 'Argo', 'Cronos', 'Strada', 'Toro',
+        ]},
+        'Renault': {'pais': 'Francia', 'modelos': [
+            'Kwid', 'Sandero', 'Duster', 'Oroch', 'Logan',
+        ]},
     }
-    for veh_slug, subtipos in lav_normal_precios.items():
-        for st_slug, (precio, tiempo) in subtipos.items():
-            reglas.append((
-                cats_dict['lavado'].id, tipos_dict[veh_slug].id,
-                lavados_dict['normal'].id, subtipos_dict[st_slug].id,
-                None, None, precio, None, False, tiempo, 0,
-                'Lavado Normal', None, True
-            ))
 
-    # Alta y Extrema (precio_estimado)
-    for tipo_slug in ['alta', 'extrema']:
-        for veh_slug, precio_tiempo in {
-            'auto': (60000, 90),
-            'suv-camioneta': (80000, 120),
-            'moto-baja': (25000, 45),
-            'moto-alta': (35000, 60),
-        }.items():
-            precio, tiempo = precio_tiempo
-            reglas.append((
-                cats_dict['lavado'].id, tipos_dict[veh_slug].id,
-                lavados_dict[tipo_slug].id, None,
-                None, None, None, precio, True, tiempo, 0,
-                f'Lavado {tipo_slug.capitalize()}',
-                'El precio puede variar luego de la inspeccion visual del vehiculo.',
-                True
-            ))
-
-    # Detallado
-    for td_slug, precio_tiempo in {
-        'detallado-interior': {'auto': (150000, 180), 'suv-camioneta': (200000, 240),
-                                'moto-baja': (60000, 90), 'moto-alta': (80000, 120)},
-        'detallado-exterior': {'auto': (120000, 150), 'suv-camioneta': (160000, 200),
-                                'moto-baja': (50000, 75), 'moto-alta': (65000, 100)},
-        'detallado-completo': {'auto': (250000, 300), 'suv-camioneta': (330000, 400),
-                                'moto-baja': (100000, 150), 'moto-alta': (130000, 200)},
-    }.items():
-        for veh_slug, (precio, tiempo) in precio_tiempo.items():
-            reglas.append((
-                cats_dict['detallado'].id, tipos_dict[veh_slug].id,
-                None, None, detallados_dict[td_slug].id, None,
-                precio, None, False, tiempo, 0,
-                f'Detallado - {veh_slug}', None, True
-            ))
-
-    # Integral (multidia)
-    for veh_slug, (precio, tiempo, dias) in {
-        'auto': (300000, 480, 2),
-        'suv-camioneta': (400000, 600, 3),
-        'moto-baja': (120000, 240, 1),
-        'moto-alta': (180000, 360, 2),
-    }.items():
-        reglas.append((
-            cats_dict['integral'].id, tipos_dict[veh_slug].id,
-            None, None, None, None,
-            precio, None, False, tiempo, dias,
-            'Servicio Integral', None, True
-        ))
-
-    # Tratamientos Especiales: enlazar con servicios existentes
-    # IDs dependen del flush, asi que enlazamos via servicio_id luego
-    # Por ahora usamos un approach de precios globales por vehiculo
-    tratamientos_por_veh = {}
-    for veh_slug, precios in {
-        'auto': (250000, 300),
-        'suv-camioneta': (350000, 400),
-        'moto-baja': (80000, 120),
-        'moto-alta': (120000, 180),
-    }.items():
-        tratamientos_por_veh[veh_slug] = precios
-
-    for cat_id, veh_id, tl_id, stl_id, td_id, svc_id, p_fijo, p_est, es_est, tpo, dias, desc, nota, activo in reglas:
-        db.session.add(ReglaPrecio(
-            categoria_servicio_id=cat_id,
-            tipo_vehiculo_id=veh_id,
-            tipo_lavado_id=tl_id,
-            subtipo_lavado_id=stl_id,
-            tipo_detallado_id=td_id,
-            servicio_id=svc_id,
-            precio_fijo=p_fijo,
-            precio_estimado=p_est,
-            es_precio_estimado=es_est,
-            tiempo_estimado_min=tpo,
-            dias_bloqueo=dias,
-            descripcion_publica=desc,
-            nota_inspeccion=nota,
-            activo=activo,
-        ))
+    marcas_dict = {}
+    for nombre_marca, data in marcas_modelos.items():
+        slug = re.sub(r'[^a-z0-9]+', '-', nombre_marca.lower()).strip('-')
+        m = Marca(nombre=nombre_marca, slug=slug, pais_origen=data['pais'], activo=True)
+        db.session.add(m)
+        db.session.flush()
+        marcas_dict[nombre_marca] = m
+        for nombre_modelo in data['modelos']:
+            modelo_slug = re.sub(r'[^a-z0-9]+', '-', nombre_modelo.lower()).strip('-')
+            mv = ModeloVehiculo(
+                marca_id=m.id,
+                nombre=nombre_modelo,
+                slug=modelo_slug,
+                tipo_vehiculo_id=tv_dict['auto'].id,
+                segmento_id=seg_dict['mediano'].id,
+                activo=True,
+            )
+            db.session.add(mv)
 
     db.session.commit()
-    print("Seed completado. Datos insertados:")
-    print(f"  - {EstadoReserva.query.count()} estados de reserva")
-    print(f"  - {Servicio.query.count()} servicios (legacy)")
-    print(f"  - {Usuario.query.count()} usuarios (admin: admin@exclusiveautodetail.com / Admin1234!)")
-    print(f"  - {Horario.query.count()} horarios")
-    print(f"  - {FactorTiempo.query.count()} factores de tiempo")
-    print(f"  - {Galeria.query.count()} imagenes de galeria")
+    print("Seed completado.")
+    print(f"  - {Segmento.query.count()} segmentos")
     print(f"  - {TipoVehiculo.query.count()} tipos de vehiculo")
+    print(f"  - {NivelSuciedad.query.count()} niveles de suciedad")
     print(f"  - {CategoriaServicio.query.count()} categorias de servicio")
-    print(f"  - {TipoLavado.query.count()} tipos de lavado")
-    print(f"  - {SubTipoLavado.query.count()} subtipos de lavado")
-    print(f"  - {TipoDetallado.query.count()} tipos de detallado")
-    print(f"  - {ReglaPrecio.query.count()} reglas de precio")
+    print(f"  - {Servicio.query.count()} servicios")
+    print(f"  - {PrecioServicio.query.count()} registros de precio/duracion")
+    print(f"  - {TipoBox.query.count()} tipos de box")
+    print(f"  - {Box.query.count()} boxes")
+    print(f"  - {Horario.query.count()} horarios")
+    print(f"  - {EstadoReserva.query.count()} estados de reserva")
+    print(f"  - {Usuario.query.count()} usuarios (admin: admin@exclusiveautodetail.com / Admin1234!)")
+    print(f"  - {Marca.query.count()} marcas")
+    print(f"  - {ModeloVehiculo.query.count()} modelos")

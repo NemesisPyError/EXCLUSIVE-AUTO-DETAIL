@@ -74,11 +74,11 @@
             <div class="admin-card">
                 <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.5rem;">Fecha y Hora</h5>
                 <p style="font-size:0.9rem;font-weight:600;">{{ reserva.fecha.strftime('%A %d de %B de %Y') | capitalize }}</p>
-                <p style="font-size:0.9rem;color:var(--accent);font-weight:700;">{{ reserva.hora_inicio.strftime('%H:%M') }} hs</p>
-                <hr style="border-color:var(--border-subtle);">
+                <p style="font-size:0.9rem;color:var(--color-brand);font-weight:700;">{{ reserva.hora_inicio.strftime('%H:%M') }} hs</p>
+                <hr style="border-color:var(--color-border);">
                 <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.5rem;">Servicios</h5>
                 {% for rs in reserva.servicios %}
-                <span class="badge-estado" style="background:rgba(26,107,255,0.1);color:var(--accent);border:1px solid rgba(26,107,255,0.2);margin:0.15rem;">{{ rs.servicio.nombre }}</span>
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ rs.servicio.nombre }}</span>
                 {% endfor %}
             </div>
         </div>

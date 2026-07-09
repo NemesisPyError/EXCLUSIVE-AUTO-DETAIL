@@ -1,6 +1,6 @@
 from flask import render_template
 from flask_login import login_required
-from datetime import date
+from datetime import date, datetime as dt, timedelta
 from models.reserva import Reserva
 from models.estado_reserva import EstadoReserva
 from routes.admin import admin_bp
@@ -9,7 +9,6 @@ from routes.admin import admin_bp
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
-    from datetime import datetime as dt
     hoy = date.today()
 
     estados = {e.nombre: e.id for e in EstadoReserva.query.all()}
@@ -19,29 +18,29 @@ def dashboard():
     ).count()
 
     pendientes = Reserva.query.filter(
-        Reserva.estado_id == estados.get('Pendiente', 0)
+        Reserva.estado_reserva_id == estados.get('Pendiente', 0)
     ).count()
 
     confirmadas = Reserva.query.filter(
-        Reserva.estado_id == estados.get('Confirmada', 0)
+        Reserva.estado_reserva_id == estados.get('Confirmada', 0)
     ).count()
 
     en_proceso = Reserva.query.filter(
-        Reserva.estado_id == estados.get('En proceso', 0)
+        Reserva.estado_reserva_id == estados.get('En Proceso', 0)
     ).count()
 
     finalizadas = Reserva.query.filter(
-        Reserva.estado_id == estados.get('Finalizada', 0)
+        Reserva.estado_reserva_id == estados.get('Entregada', 0)
     ).count()
 
     completadas = Reserva.query.filter(
-        Reserva.estado_id.in_([
-            estados.get(n, 0) for n in ('Lavado terminado', 'Esperando retiro', 'Finalizada')
+        Reserva.estado_reserva_id.in_([
+            estados.get(n, 0) for n in ('Lista', 'Entregada')
         ])
     ).count()
 
     canceladas = Reserva.query.filter(
-        Reserva.estado_id == estados.get('Cancelada', 0)
+        Reserva.estado_reserva_id == estados.get('Cancelada', 0)
     ).count()
 
     ahora = dt.now().time()
@@ -49,20 +48,22 @@ def dashboard():
     reservas_activas = Reserva.query.options(
         joinedload(Reserva.cliente),
         joinedload(Reserva.estado),
-        joinedload(Reserva.categoria_servicio),
+        joinedload(Reserva.servicio),
     ).filter(
-        Reserva.estado_id == estados.get('En proceso', 0),
+        Reserva.estado_reserva_id == estados.get('En Proceso', 0),
         Reserva.fecha == hoy,
     ).all()
 
     tiempo_restante_total = 0
     for r in reservas_activas:
-        if r.hora_fin_calculada:
-            fin_min = r.hora_fin_calculada.hour * 60 + r.hora_fin_calculada.minute
-            ahora_min = ahora.hour * 60 + ahora.minute
-            restante = fin_min - ahora_min
-            if restante > 0:
-                tiempo_restante_total += restante
+        inicio_dt = dt.combine(hoy, r.hora_inicio)
+        fin_dt = inicio_dt + timedelta(minutes=r.duracion_total_min)
+        fin_time = fin_dt.time()
+        ahora_min = ahora.hour * 60 + ahora.minute
+        fin_min = fin_time.hour * 60 + fin_time.minute
+        restante = fin_min - ahora_min
+        if restante > 0:
+            tiempo_restante_total += restante
 
     from models.horario import Horario
     dia_semana = hoy.weekday() + 1

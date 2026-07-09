@@ -1,21 +1,28 @@
+from datetime import datetime, timezone
 from extensions import db
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 
 class GaleriaCategoria(db.Model):
-    __tablename__ = 'galeria_categoria'
+    __tablename__ = 'galeria_categorias'
 
-    id         = db.Column(db.Integer, primary_key=True)
-    nombre     = db.Column(db.String(120), nullable=False, unique=True)
-    orden      = db.Column(db.Integer, nullable=False, default=0)
-    activo     = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(db.String(60), unique=True, nullable=False)
+    orden: Mapped[int] = mapped_column(db.SmallInteger, default=0, nullable=False)
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
-    imagenes = db.relationship(
-        'Galeria',
-        backref='categoria',
-        cascade='all, delete-orphan',
-        lazy=True,
+    imagenes: Mapped[List['Galeria']] = relationship(
+        back_populates='categoria', cascade='all, delete-orphan'
     )
 
     def __repr__(self):

@@ -34,11 +34,11 @@
                     <td>#{{ c.id }}</td>
                     <td style="font-weight:600;">{{ c.nombre }}</td>
                     <td>{{ c.apellido }}</td>
-                    <td style="font-size:0.82rem;color:var(--text-muted);">{{ c.cedula }}</td>
+                    <td style="font-size:0.82rem;color:var(--color-text-secondary);">{{ c.cedula }}</td>
                     <td style="font-size:0.82rem;">{{ c.telefono }}</td>
-                    <td style="font-size:0.78rem;color:var(--text-muted);">{{ c.email or '—' }}</td>
+                    <td style="font-size:0.78rem;color:var(--color-text-secondary);">{{ c.email or '—' }}</td>
                     <td>
-                        <span class="badge-estado" style="background:rgba(26,107,255,0.1);color:var(--accent);border:1px solid rgba(26,107,255,0.2);font-size:0.75rem;">
+                        <span class="badge-estado badge-brand" style="font-size:0.75rem;">
                             {{ c.reservas.count() }}
                         </span>
                     </td>
@@ -63,7 +63,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No se encontraron clientes.</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No se encontraron clientes.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -86,7 +86,7 @@
         {% if paginacion.has_next %}
         <a href="{{ url_for('admin.listar_clientes', page=paginacion.next_num, buscar=buscar) }}"><i class="fa-solid fa-chevron-right"></i></a>
         {% endif %}
-        <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem;">{{ paginacion.total }} clientes</span>
+        <span style="font-size:0.78rem;color:var(--color-text-secondary);margin-left:0.5rem;">{{ paginacion.total }} clientes</span>
     </div>
     {% endif %}
 </div>

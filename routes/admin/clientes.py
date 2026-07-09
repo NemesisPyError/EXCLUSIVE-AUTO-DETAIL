@@ -40,7 +40,6 @@ def listar_clientes():
             'cedula': c.cedula,
             'telefono': c.telefono,
             'email': c.email or '',
-            'observaciones': c.observaciones or '',
             'reservas_count': c.reservas.count(),
         }
         for c in paginacion.items
@@ -73,7 +72,7 @@ def editar_cliente(cliente_id):
     cliente.cedula = (data.get('cedula') or '').strip() or cliente.cedula
     cliente.telefono = (data.get('telefono') or '').strip() or cliente.telefono
     cliente.email = (data.get('email') or '').strip() or None
-    cliente.observaciones = (data.get('observaciones') or '').strip() or None
+    cliente.email = (data.get('email') or '').strip() or None
     db.session.commit()
     flash('Cliente actualizado correctamente.', 'success')
     return redirect(url_for('admin.listar_clientes'))
