@@ -1,0 +1,639 @@
+/* ==========================================================================
+   Exclusive Auto Detail — Componentes Base
+   Botones, inputs y cards construidos únicamente con tokens de tokens.css.
+   Importado junto con tokens.css en styles.css, wizard.css y base_admin.html.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   BUTTONS
+   -------------------------------------------------------------------------- */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: 48px;
+    padding: 0 var(--space-5);
+    border: none;
+    border-radius: var(--radius-sm);
+    font: var(--text-body-strong);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        background-color var(--duration-base) var(--easing-standard),
+        box-shadow var(--duration-base) var(--easing-standard),
+        transform var(--duration-fast) var(--easing-pop);
+}
+
+.btn-primary {
+    background-color: var(--color-brand);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-brand-hover);
+    box-shadow: 0 4px 12px rgba(26, 107, 255, 0.25);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+    box-shadow: none;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-secondary:active {
+    transform: scale(0.98);
+}
+
+.btn-danger {
+    background-color: var(--color-danger);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.9);
+}
+
+.btn-danger:active {
+    transform: scale(0.98);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Commitment final-flow button (Confirmar Reserva, Confirmar Pago) */
+.btn-primary.btn-commit {
+    height: 52px;
+}
+
+/* --------------------------------------------------------------------------
+   INPUTS
+   -------------------------------------------------------------------------- */
+
+.form-control,
+.ead-input,
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select {
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--space-4);
+    background-color: var(--color-bg-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font: var(--text-body);
+    transition:
+        border-color var(--duration-base) var(--easing-standard),
+        box-shadow var(--duration-base) var(--easing-standard);
+}
+
+.form-control::placeholder,
+.ead-input::placeholder,
+input::placeholder,
+select::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.form-control:focus,
+.ead-input:focus,
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: var(--shadow-focus);
+}
+
+.form-control:disabled,
+.ead-input:disabled,
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+textarea.form-control,
+textarea.ead-input,
+textarea {
+    min-height: 120px;
+    padding: var(--space-3) var(--space-4);
+    height: auto;
+}
+
+/* Validation states */
+.ead-input.is-valid,
+.form-control.is-valid,
+input.is-valid {
+    border-color: var(--color-success);
+}
+
+.ead-input.is-invalid,
+.form-control.is-invalid,
+input.is-invalid {
+    border-color: var(--color-danger);
+}
+
+/* --------------------------------------------------------------------------
+   CARDS
+   -------------------------------------------------------------------------- */
+
+.ead-card,
+.card,
+.service-card,
+.svc-card {
+    padding: var(--space-4);
+    background-color: var(--color-bg-1);
+    border-radius: var(--radius-md);
+    transition:
+        background-color var(--duration-base) var(--easing-standard),
+        box-shadow var(--duration-base) var(--easing-standard),
+        transform var(--duration-fast) var(--easing-pop);
+}
+
+.ead-card:hover,
+.card:hover,
+.service-card:hover,
+.svc-card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.ead-card.selected,
+.card.selected,
+.service-card.selected,
+.svc-card.selected,
+.ead-card.active,
+.card.active,
+.service-card.active,
+.svc-card.active {
+    background-color: var(--color-bg-2);
+    box-shadow: var(--shadow-selected);
+}
+
+.ead-card:active,
+.card:active,
+.service-card:active,
+.svc-card:active {
+    transform: scale(0.99);
+}
+
+/* Large cards (hero, summary panel) */
+.ead-card-lg,
+.card-lg {
+    padding: var(--space-5);
+}
+
+/* --------------------------------------------------------------------------
+   SELECT CARD — clickable selection component (tipo vehículo, segmento, etc.)
+   -------------------------------------------------------------------------- */
+
+.ead-select-card {
+    cursor: pointer;
+    padding: var(--space-3) var(--space-2);
+    text-align: center;
+    background-color: var(--color-bg-1);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 65px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.ead-select-card i {
+    font-size: 1rem;
+    color: var(--color-text-tertiary);
+    margin-bottom: 0.2rem;
+    display: block;
+    transition: all 0.15s;
+    position: relative;
+    z-index: 1;
+}
+.ead-select-card span {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--color-text-tertiary);
+    display: block;
+    position: relative;
+    z-index: 1;
+    transition: color 0.15s;
+}
+.ead-select-card small {
+    font-size: 0.58rem;
+    color: var(--color-text-tertiary);
+    display: block;
+    margin-top: 0.05rem;
+    position: relative;
+    z-index: 1;
+}
+.ead-select-card.selected {
+    border-color: var(--color-brand);
+    background: rgba(26, 107, 255, 0.12);
+    box-shadow: 0 2px 8px rgba(26, 107, 255, 0.12);
+}
+.ead-select-card.selected i,
+.ead-select-card.selected span { color: var(--color-brand); }
+.ead-select-card.selected small { color: var(--color-brand); opacity: 0.8; }
+.ead-select-card:active {
+    transform: scale(0.96);
+    transition: transform 0.1s;
+}
+.ead-select-card:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+/* Check-mark overlay */
+.ead-select-card::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: #fff;
+    z-index: 2;
+    line-height: 20px;
+    text-align: center;
+}
+.ead-select-card.selected::after {
+    display: flex;
+    animation: eadCheckPop var(--duration-base) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes eadCheckPop {
+    0% { opacity: 0; transform: scale(0); }
+    60% { transform: scale(1.18); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@media (min-width: 576px) {
+    .ead-select-card {
+        padding: var(--space-3) var(--space-3);
+        border-radius: var(--radius-sm);
+        min-height: 72px;
+    }
+    .ead-select-card i { font-size: 1.15rem; }
+    .ead-select-card span { font-size: 0.7rem; }
+    .ead-select-card small { font-size: 0.6rem; }
+}
+@media (min-width: 768px) {
+    .ead-select-card {
+        padding: var(--space-3) var(--space-3);
+        border-radius: var(--radius-sm);
+        min-height: auto;
+    }
+    .ead-select-card i { font-size: 1.25rem; margin-bottom: 0.3rem; }
+    .ead-select-card span { font-size: 0.74rem; }
+    .ead-select-card small { font-size: 0.62rem; }
+    .ead-select-card:hover {
+        border-color: rgba(26, 107, 255, 0.4);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover), 0 0 12px rgba(26, 107, 255, 0.08);
+    }
+    .ead-select-card:hover i { color: var(--color-brand); }
+    .ead-select-card:hover span { color: var(--color-text-secondary); }
+    .ead-select-card.selected {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-hover), 0 0 16px rgba(26, 107, 255, 0.15);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   EMPTY STATE
+   -------------------------------------------------------------------------- */
+
+.ead-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-7) var(--space-5);
+    gap: var(--space-3);
+}
+.ead-empty-state .ead-empty-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-2);
+    border-radius: var(--radius-full);
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+}
+.ead-empty-state .ead-empty-title {
+    font: var(--text-body-strong);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+.ead-empty-state .ead-empty-desc {
+    font: var(--text-caption);
+    color: var(--color-text-secondary);
+    margin: 0;
+    max-width: 320px;
+}
+.ead-empty-state .ead-empty-action {
+    margin-top: var(--space-2);
+}
+
+/* --------------------------------------------------------------------------
+   MODAL ENTRY ANIMATION
+   -------------------------------------------------------------------------- */
+
+.ead-modal .modal-content {
+    animation: eadModalIn var(--duration-slow) var(--easing-standard) both;
+}
+@keyframes eadModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+.modal-backdrop {
+    animation: eadFadeIn var(--duration-base) var(--easing-standard) both;
+}
+@keyframes eadFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   BADGE / CHIP ENTRY
+   -------------------------------------------------------------------------- */
+
+.badge-estado,
+.badge-estado-dyn {
+    animation: badgeAppear var(--duration-base) var(--easing-pop) both;
+}
+@keyframes badgeAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   FLASH / ALERT
+   -------------------------------------------------------------------------- */
+
+.ead-alert {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    font: var(--text-caption);
+    margin-bottom: var(--space-4);
+    text-align: center;
+    animation: alertSlideIn var(--duration-slow) var(--easing-standard) both;
+}
+
+.ead-alert-danger {
+    background-color: rgba(229, 72, 77, 0.14);
+    color: var(--color-danger);
+}
+
+.ead-alert-success {
+    background-color: var(--color-success-tint);
+    color: var(--color-success);
+}
+
+.ead-alert-warning {
+    background-color: var(--color-warning-tint);
+    color: var(--color-warning);
+}
+
+.ead-alert-info {
+    background-color: var(--color-brand-tint);
+    color: var(--color-brand);
+}
+
+@keyframes alertSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   LOADING / SPINNER PLACEHOLDER
+   -------------------------------------------------------------------------- */
+
+.ead-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    color: var(--color-text-tertiary);
+    font: var(--text-caption);
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   FIELD ERROR — inline validation message
+   -------------------------------------------------------------------------- */
+
+.ead-field-error {
+    color: var(--color-danger);
+    font-size: 0.78rem;
+    margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   TOAST
+   -------------------------------------------------------------------------- */
+
+.ead-toast-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0;
+    pointer-events: none;
+}
+
+.ead-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 420px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    font: var(--text-caption);
+    animation: toastIn var(--duration-base) var(--easing-pop) both;
+    box-shadow: var(--shadow-modal);
+}
+
+.ead-toast.removing {
+    animation: toastOut var(--duration-slow) var(--easing-standard) both;
+}
+
+.ead-toast-success {
+    background-color: var(--color-success-tint);
+    color: var(--color-success);
+}
+
+.ead-toast-error {
+    background-color: rgba(229, 72, 77, 0.14);
+    color: var(--color-danger);
+}
+
+.ead-toast-info {
+    background-color: var(--color-brand-tint);
+    color: var(--color-brand);
+}
+
+.ead-toast .ead-toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    min-width: 24px;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.96);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   FOCUS VISIBLE (keyboard accessibility)
+   -------------------------------------------------------------------------- */
+
+.ead-focus-visible:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    transition: box-shadow var(--duration-base) var(--easing-standard);
+}
+
+/* --------------------------------------------------------------------------
+   BUTTON LOADING STATE
+   -------------------------------------------------------------------------- */
+
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+.btn-loading .btn-text {
+    visibility: hidden;
+}
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 18px;
+    height: 18px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: eadSpin 0.7s linear infinite;
+}
+@keyframes eadSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   ACTIVE / PRESS STATE FOR CLICKABLE ELEMENTS
+   -------------------------------------------------------------------------- */
+
+.ead-press:active,
+.clickable:active,
+[role="button"]:active,
+.ead-card-clickable:active {
+    transform: scale(0.98);
+    transition: transform var(--duration-fast) var(--easing-pop);
+}

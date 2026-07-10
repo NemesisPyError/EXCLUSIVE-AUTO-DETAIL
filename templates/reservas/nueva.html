@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Reservar Turno — Exclusive Auto Detail{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wizard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="wizard-container" id="wizardContainer">
+    <div class="text-center mb-2">
+        <a href="{{ url_for('main.index') }}" style="color:var(--color-text-secondary);font-size:var(--text-caption);text-decoration:none;">
+            <i class="fa-solid fa-arrow-left me-1"></i>Volver al inicio
+        </a>
+    </div>
+
+    <!-- COMPACT PROGRESS — MOBILE -->
+    <div class="progress-mobile" id="progressMobile">
+        <span class="progress-mobile-label" id="progressMobileLabel">Paso 1 de 5</span>
+        <div class="progress-mobile-bar"><div class="progress-mobile-fill" id="progressMobileFill"></div></div>
+    </div>
+
+    <!-- DESKTOP PROGRESS STEPS -->
+    <div class="progress-steps" id="progressSteps" role="tablist" aria-label="Pasos de la reserva">
+        <div class="step active ead-step-indicator" data-step="1" role="tab" aria-selected="true" tabindex="0">
+            <div class="circle">1</div><div class="label">Servicio</div>
+        </div>
+        <div class="step ead-step-indicator" data-step="2" role="tab" aria-selected="false">
+            <div class="circle">2</div><div class="label">Vehiculo</div>
+        </div>
+        <div class="step ead-step-indicator" data-step="3" role="tab" aria-selected="false">
+            <div class="circle">3</div><div class="label">Agenda</div>
+        </div>
+        <div class="step ead-step-indicator" data-step="4" role="tab" aria-selected="false">
+            <div class="circle">4</div><div class="label">Datos</div>
+        </div>
+        <div class="step ead-step-indicator" data-step="5" role="tab" aria-selected="false">
+            <div class="circle">5</div><div class="label">Confirmar</div>
+        </div>
+    </div>
+
+    <div class="wizard-layout">
+        <div class="wizard-steps-area">
+
+            <!-- ═══ PASO 1: Servicio + Suciedad + Adicionales ═══ -->
+            <div class="ead-step-pane" id="paso-1" role="tabpanel" aria-label="Paso 1: Elegi tu servicio">
+                <div class="step-indicator"><span>Elegi tu Servicio</span></div>
+
+                <div id="paquetesLoading" class="ead-loading"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando paquetes...</div>
+                <div id="paquetesContainer" style="margin-bottom:var(--space-3);"></div>
+
+                <div id="serviciosLoading" class="ead-loading"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando servicios...</div>
+                <div id="serviciosContainer" role="radiogroup" aria-label="Servicios"></div>
+                <div id="fieldError_servicio_id" class="ead-field-error d-none"></div>
+
+                <div id="paqueteComposicion" style="margin-top:var(--space-2);"></div>
+                <div id="inspeccionAviso" style="margin-top:var(--space-2);"></div>
+
+                <!-- Service detail panel (appears after selection) -->
+                <div id="servicioDetalle" style="display:none;">
+                    <div class="svc-detail-content ead-card" id="svcDetailContent"></div>
+                    <div class="mt-2 p-2 rounded" id="precioBadgeDetail" style="background:var(--color-bg-1);">
+                        <span class="text-muted">Selecciona el nivel de suciedad para ver el precio</span>
+                    </div>
+                </div>
+
+                <div class="wizard-nav mt-2">
+                    <div></div>
+                    <button type="button" class="btn-primary" id="btnNext" disabled>Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                </div>
+            </div>
+
+            <!-- ═══ PASO 2: Vehiculo ═══ -->
+            <div class="ead-step-pane d-none" id="paso-2" role="tabpanel" aria-label="Paso 2: Tu vehiculo">
+                <div class="step-indicator"><span>Tu Vehiculo</span></div>
+
+                <div class="row g-2">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="autoMarca">Marca</label>
+                        <div class="ead-autocomplete-wrapper">
+                            <input type="text" class="form-control ead-input" id="autoMarca" placeholder="Buscar marca..." autocomplete="off">
+                        </div>
+                        <div id="fieldError_marca" class="ead-field-error d-none"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="autoModelo">Modelo</label>
+                        <div class="ead-autocomplete-wrapper">
+                            <input type="text" class="form-control ead-input" id="autoModelo" placeholder="Buscar modelo..." autocomplete="off" oninput="WizardVehiculoAutocomplete.searchModelos()">
+                        </div>
+                        <div id="fieldError_modelo" class="ead-field-error d-none"></div>
+                    </div>
+                </div>
+
+                <div id="vehicleFoundInfo" style="display:none;margin-top:var(--space-2);"></div>
+                <div id="notCataloguedMsg" style="display:none;margin-top:var(--space-2);">
+                    <div class="ead-alert ead-alert-warning text-start">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        <span>No encontramos tu vehiculo en el catalogo. Selecciona el tipo y tamano manualmente.</span>
+                    </div>
+                </div>
+
+                <div id="manualVehicleType" style="display:none;">
+                    <label class="form-label fw-bold mt-2">Tipo de vehiculo</label>
+                    <div id="tiposVehiculoLoading" class="ead-loading"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando tipos...</div>
+                    <div class="option-grid" id="tiposVehiculoContainer" role="radiogroup" aria-label="Tipo de vehiculo"></div>
+                    <div id="fieldError_tipo_vehiculo_id" class="ead-field-error d-none"></div>
+
+                    <label class="form-label fw-bold mt-2">Tamano</label>
+                    <div id="segmentosLoading" class="ead-loading"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando segmentos...</div>
+                    <div class="option-grid" id="segmentosContainer" role="radiogroup" aria-label="Segmento"></div>
+                    <div id="fieldError_segmento_id" class="ead-field-error d-none"></div>
+                </div>
+
+                <button type="button" class="btn-expand-more mt-2" id="btnMoreInfo" onclick="WizardMain.toggleOptionalFields()">
+                    <i class="fa-solid fa-chevron-down me-1"></i>Mas informacion (opcional)
+                </button>
+
+                <div class="row g-2 mt-1" id="optionalFields" style="display:none;">
+                    <div class="col-6 col-sm-4">
+                        <label class="form-label" for="inpAnio">Ano</label>
+                        <input type="number" class="form-control ead-input" id="inpAnio" placeholder="2024" min="1990" max="2030">
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <label class="form-label" for="inpColor">Color</label>
+                        <input type="text" class="form-control ead-input" id="inpColor" placeholder="Blanco, Negro...">
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <label class="form-label" for="inpChapa">Chapa</label>
+                        <input type="text" class="form-control ead-input" id="inpChapa" placeholder="AAA 000">
+                    </div>
+                    <div class="col-6 col-sm-6">
+                        <label class="form-label" for="inpCombustible">Combustible</label>
+                        <select class="form-control ead-input" id="inpCombustible">
+                            <option value="">No especificado</option>
+                            <option value="Nafta">Nafta</option><option value="Diesel">Diesel</option>
+                            <option value="Electrico">Electrico</option><option value="Hibrido">Hibrido</option>
+                            <option value="GNC">GNC</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-6">
+                        <label class="form-label" for="inpTransmision">Transmision</label>
+                        <select class="form-control ead-input" id="inpTransmision">
+                            <option value="">No especificada</option>
+                            <option value="Manual">Manual</option><option value="Automatica">Automatica</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="wizard-nav mt-2">
+                    <button type="button" class="btn-secondary" id="btnPrev"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                    <button type="button" class="btn-primary" id="btnNext2">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                </div>
+            </div>
+
+            <!-- ═══ PASO 3: Agenda ═══ -->
+            <div class="ead-step-pane d-none" id="paso-3" role="tabpanel" aria-label="Paso 3: Fecha y hora">
+                <div class="step-indicator"><span>Fecha y Hora</span></div>
+
+                <div class="date-chips" id="dateChips">
+                    <button type="button" class="date-chip active" data-offset="0" onclick="WizardAvailability.selectQuickDate(0)">Hoy</button>
+                    <button type="button" class="date-chip" data-offset="1" onclick="WizardAvailability.selectQuickDate(1)">Manana</button>
+                    <button type="button" class="date-chip date-chip-picker" data-offset="custom" onclick="WizardAvailability.toggleDatePicker()">
+                        <i class="fa-solid fa-calendar me-1"></i>Elegir fecha
+                    </button>
+                </div>
+
+                <div id="datePickerWrap" style="display:none;">
+                    <label class="form-label mt-2" for="inpFecha">Fecha</label>
+                    <input type="date" class="form-control ead-input" id="inpFecha" aria-label="Fecha de la reserva">
+                </div>
+
+                <div id="fieldError_fecha" class="ead-field-error d-none"></div>
+
+                <div id="bestSlotBanner" style="display:none;margin-top:var(--space-3);"></div>
+
+                <div class="mt-2">
+                    <label class="form-label fw-bold">Horarios disponibles</label>
+                    <div id="slotsContainer"><p class="text-muted">Selecciona una fecha para ver los horarios.</p></div>
+                </div>
+                <div id="fieldError_hora_inicio" class="ead-field-error d-none"></div>
+                <div class="wizard-nav mt-2">
+                    <button type="button" class="btn-secondary" id="btnPrev3"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                    <button type="button" class="btn-primary" id="btnNext3">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                </div>
+            </div>
+
+            <!-- ═══ PASO 4: Datos ═══ -->
+            <div class="ead-step-pane d-none" id="paso-4" role="tabpanel" aria-label="Paso 4: Tus datos">
+                <div class="step-indicator"><span>Tus Datos</span></div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label" for="inpNombre">Nombre *</label>
+                        <input type="text" class="form-control ead-input" id="inpNombre" placeholder="Tu nombre" autocomplete="given-name">
+                        <div id="fieldError_nombre" class="ead-field-error d-none"></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="inpApellido">Apellido *</label>
+                        <input type="text" class="form-control ead-input" id="inpApellido" placeholder="Tu apellido" autocomplete="family-name">
+                        <div id="fieldError_apellido" class="ead-field-error d-none"></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="inpTelefono">Telefono *</label>
+                        <input type="tel" class="form-control ead-input" id="inpTelefono" placeholder="0991 234567" autocomplete="tel">
+                        <div id="fieldError_telefono" class="ead-field-error d-none"></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="inpEmail">Email</label>
+                        <input type="email" class="form-control ead-input" id="inpEmail" placeholder="tu@email.com" autocomplete="email">
+                    </div>
+                </div>
+
+                <button type="button" class="btn-expand-more mt-2" id="btnMoreInfoP4" onclick="WizardMain.toggleOptionalFieldsP4()">
+                    <i class="fa-solid fa-chevron-down me-1"></i>Informacion adicional (opcional)
+                </button>
+
+                <div class="row g-2 mt-1" id="optionalFieldsP4" style="display:none;">
+                    <div class="col-12">
+                        <label class="form-label" for="inpCedula">Cedula</label>
+                        <input type="text" class="form-control ead-input" id="inpCedula" placeholder="1234567">
+                    </div>
+                </div>
+
+                <div class="wizard-nav mt-2">
+                    <button type="button" class="btn-secondary" id="btnPrev4"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                    <button type="button" class="btn-primary" id="btnNext4">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                </div>
+            </div>
+
+            <!-- ═══ PASO 5: Confirmacion ═══ -->
+            <div class="ead-step-pane d-none" id="paso-5" role="tabpanel" aria-label="Paso 5: Confirmar reserva">
+                <div class="step-indicator"><span>Confirma tu Reserva</span></div>
+                <div class="ead-alert ead-alert-info mb-2"><i class="fa-solid fa-circle-check me-2"></i>Revisa los datos antes de confirmar.</div>
+                <div id="step5Summary"></div>
+                <div class="wizard-nav mt-2">
+                    <button type="button" class="btn-secondary" id="btnPrev5"><i class="fa-solid fa-arrow-left me-1"></i> Atras</button>
+                    <button type="button" class="btn-primary btn-commit" id="btnSubmit" onclick="window.WizardMain.submit()" disabled>
+                        <i class="fa-solid fa-paper-plane me-1"></i> <span id="btnSubmitText">Confirmar Reserva</span>
+                        <span id="btnSubmitSpinner" class="d-none"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DESKTOP SIDEBAR -->
+        <aside class="wizard-sidebar" id="wizardSidebar">
+            <div class="wizard-sidebar-title"><i class="fa-solid fa-receipt me-2"></i>Tu Reserva</div>
+            <div id="resumenSidebar">
+                <p class="text-muted-custom small">Selecciona un servicio para comenzar.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- MOBILE STICKY FOOTER -->
+<div class="mobile-sticky-footer" id="mobileStickyFooter" style="display:none;">
+    <div class="msf-price" id="msfPrice"></div>
+    <button type="button" class="msf-resume-btn" id="msfResumeBtn" onclick="WizardSummary.openBottomSheet()">
+        <i class="fa-solid fa-chevron-up me-1"></i>Ver resumen
+    </button>
+</div>
+
+<!-- BOTTOM SHEET -->
+<div class="bs-overlay" id="bsOverlay" onclick="WizardSummary.closeBottomSheet()"></div>
+<div class="bottom-sheet" id="bottomSheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+        <span class="bs-title">Resumen de Reserva</span>
+        <button type="button" class="bs-close" onclick="WizardSummary.closeBottomSheet()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="bs-body" id="bsBody">
+        <p class="text-muted-custom small">Completa los pasos para ver el resumen.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+window.WIZARD_URLS = {
+    crearReserva: "{{ url_for('reservas.crear') }}",
+    confirmacionBase: "{{ url_for('reservas.confirmacion', token='') }}"
+};
+var WIZARD_MOBILE_BP = 768;
+</script>
+<script src="{{ url_for('static', filename='js/wizard-state.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-helpers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-validations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-pricing.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-rendering.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-summary.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-availability.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-navigation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-vehiculo-autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wizard-main.js') }}"></script>
+{% endblock %}

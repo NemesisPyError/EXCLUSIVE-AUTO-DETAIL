@@ -1,0 +1,152 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Dashboard — Admin{% endblock %}
+
+{% block content %}
+<h4 style="font-weight:700;margin-bottom:1.5rem;">Dashboard</h4>
+
+<!-- Row 1: Key Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-brand);">
+            <div class="card-title">Reservas Hoy</div>
+            <div class="card-number" style="color:var(--color-brand);">{{ reservas_hoy }}</div>
+        </div>
+    </div>
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-warning);">
+            <div class="card-title">Pendientes</div>
+            <div class="card-number" style="color:var(--color-warning);">{{ pendientes }}</div>
+        </div>
+    </div>
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-brand);">
+            <div class="card-title">Confirmadas</div>
+            <div class="card-number" style="color:var(--color-brand);">{{ confirmadas }}</div>
+        </div>
+    </div>
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-brand);">
+            <div class="card-title">En Proceso</div>
+            <div class="card-number" style="color:var(--color-brand);">{{ en_proceso }}</div>
+        </div>
+    </div>
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-success);">
+            <div class="card-title">Finalizadas</div>
+            <div class="card-number" style="color:var(--color-success);">{{ completadas }}</div>
+        </div>
+    </div>
+    <div class="col-lg col-md-4 col-6">
+        <div class="admin-card" style="border-left:4px solid var(--color-danger);">
+            <div class="card-title">Canceladas</div>
+            <div class="card-number" style="color:var(--color-danger);">{{ canceladas }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Live Info -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="admin-card" style="text-align:center;">
+            <div class="card-title">Tiempo Restante Hoy</div>
+            {% set h = (tiempo_restante_total // 60) %}
+            {% set m = (tiempo_restante_total % 60) %}
+            <div class="card-number" style="color:var(--color-brand);font-size:1.8rem;">
+                {{ h }}h {{ m }}min
+            </div>
+            <small style="color:var(--color-text-secondary);">estimado de vehiculos en proceso</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card" style="text-align:center;">
+            <div class="card-title">Horas Disponibles Hoy</div>
+            <div class="card-number" style="color:var(--color-success);font-size:1.8rem;">
+                {{ horas_disponibles }} horas
+            </div>
+            <small style="color:var(--color-text-secondary);">capacidad libre estimada</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card" style="text-align:center;">
+            <div class="card-title">Empleados Activos</div>
+            <div class="card-number" style="color:var(--color-brand);font-size:1.8rem;">
+                {{ empleados_count }}
+            </div>
+            <small style="color:var(--color-text-secondary);">personal disponible</small>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Agenda visual del dia -->
+<div class="admin-card mb-3">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <h5 style="font-weight:700;font-size:1rem;margin:0;">Reservas de Hoy</h5>
+        <a href="{{ url_for('admin.listar_reservas') }}" style="color:var(--color-brand);font-size:0.82rem;font-weight:600;text-decoration:none;">
+            Ver todas <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    {% set reservas_hoy_lista = [] %}
+    <div class="timeline-container" style="position:relative;margin:1rem 0;">
+        <div style="display:flex;align-items:flex-start;border-left:3px solid var(--color-border);padding-left:1.25rem;">
+
+        {% if ultimas_reservas %}
+        <div style="width:100%;">
+            {% for r in ultimas_reservas[:8] %}
+            <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 0;border-bottom:1px solid var(--color-border);position:relative;">
+                <div style="position:absolute;left:-1.6rem;top:50%;width:10px;height:10px;border-radius:50%;background:{{ r.estado.color_badge }};transform:translateY(-50%);"></div>
+                <div style="width:70px;text-align:center;">
+                    <span style="font-weight:700;font-size:0.8rem;color:var(--color-brand);">#{{ r.id }}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.85rem;">{{ r.cliente.nombre }} {{ r.cliente.apellido }}</div>
+                    <div style="font-size:0.72rem;color:var(--color-text-secondary);">
+                        {% set v = r.vehiculo %}
+                        {% if v %}{{ v.marca.nombre if v.marca else v.marca_texto }} {{ v.modelo.nombre if v.modelo else v.modelo_texto }}{% else %}--{% endif %}
+                        {% if r.servicio and r.servicio.categoria %} · {{ r.servicio.categoria.nombre }}{% endif %}
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:0.8rem;font-weight:600;">
+                        {{ r.hora_inicio.strftime('%H:%M') }}
+                        {% set dur_min = r.duracion_total_min or 60 %}
+                        {% set fin_h = ((r.hora_inicio.hour * 60 + r.hora_inicio.minute + dur_min) // 60) %}
+                        {% set fin_m = ((r.hora_inicio.hour * 60 + r.hora_inicio.minute + dur_min) % 60) %}
+                        → {{ '%02d:%02d' % (fin_h % 24, fin_m) }}
+                    </div>
+                    <span class="badge-estado" style="background:{{ r.estado.color_badge }}22;color:{{ r.estado.color_badge }};border:1px solid {{ r.estado.color_badge }}44;font-size:0.68rem;">
+                        {{ r.estado.nombre }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted-custom" style="text-align:center;padding:1.5rem 0;width:100%;">No hay reservas registradas.</p>
+        {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: Employee quick view -->
+<div class="admin-card">
+    <h5 style="font-weight:700;font-size:1rem;margin-bottom:1rem;">Empleados</h5>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+    {% for emp in empleados %}
+        <div style="background:var(--color-bg-0);border:1px solid var(--color-border);border-radius:8px;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;min-width:200px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--color-brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:var(--color-text-primary);flex-shrink:0;">{{ emp.nombre[:1] }}</div>
+            <div>
+                <div style="font-weight:600;font-size:0.85rem;">{{ emp.nombre }}</div>
+                <div style="font-size:0.72rem;color:var(--color-text-secondary);">{{ emp.rol | capitalize }}</div>
+            </div>
+            {% set activas = emp.reservas_asignadas | selectattr('estado.nombre', 'in', ['En proceso', 'Vehiculo recibido']) | list %}
+            <div style="margin-left:auto;font-weight:700;font-size:0.8rem;color:var(--color-brand);">{{ activas | length }} activas</div>
+        </div>
+    {% endfor %}
+    {% if not empleados %}
+        <p class="text-muted-custom">Sin empleados registrados.</p>
+    {% endif %}
+    </div>
+</div>
+{% endblock %}

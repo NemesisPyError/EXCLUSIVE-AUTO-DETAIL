@@ -1,0 +1,131 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Boxes — Admin{% endblock %}
+{% block content %}
+
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Boxes</h5>
+    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalBox" onclick="resetForm()">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo Box
+    </button>
+</div>
+
+{% if items %}
+<div class="admin-card">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tipo de Box</th>
+                    <th>Orden</th>
+                    <th>Activo</th>
+                    <th style="width:120px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for box in items %}
+            <tr>
+                <td style="font-weight:600;">{{ box.nombre }}</td>
+                <td style="color:var(--color-text-secondary);">{{ box.tipo_box.nombre }}</td>
+                <td>{{ box.orden }}</td>
+                <td>
+                    <span class="badge-estado {% if box.activo %}color-lista{% else %}color-cancelada{% endif %}">
+                        {{ 'Activo' if box.activo else 'Inactivo' }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:0.35rem;">
+                        <button class="btn-secondary" onclick="editarBox({{ box.id }}, '{{ box.nombre|e }}', {{ box.tipo_box_id }}, {{ box.orden }}, {{ 'true' if box.activo else 'false' }})">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                        </button>
+                        <button class="btn-secondary" onclick="toggleBox({{ box.id }})" title="{{ 'Desactivar' if box.activo else 'Activar' }}">
+                            <i class="fa-solid {% if box.activo %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="text-center text-muted-custom py-5">No hay boxes registrados.</div>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalBox" tabindex="-1">
+    <div class="modal ead-modal-dialog modal-dialog-centered">
+        <form class="modal ead-modal-content" method="post" id="formBox">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h5 class="modal ead-modal-title" id="modalBoxTitle">Nuevo Box</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" name="nombre" id="b_nombre" class="form-control" required maxlength="30">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Box *</label>
+                    <select name="tipo_box_id" id="b_tipo_box_id" class="form-select" required>
+                        {% for tb in tipos_box %}
+                        <option value="{{ tb.id }}">{{ tb.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Orden</label>
+                    <input type="number" name="orden" id="b_orden" class="form-control" value="0" min="0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Activo</label>
+                    <select name="activo" id="b_activo" class="form-select">
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function resetForm() {
+    document.getElementById('formBox').action = '{{ url_for("admin.crear_box") }}';
+    document.getElementById('modalBoxTitle').textContent = 'Nuevo Box';
+    document.getElementById('b_nombre').value = '';
+    document.getElementById('b_orden').value = '0';
+    document.getElementById('b_activo').value = '1';
+}
+
+function editarBox(id, nombre, tipoBoxId, orden, activo) {
+    document.getElementById('formBox').action = '/admin/boxes/' + id + '/editar';
+    document.getElementById('modalBoxTitle').textContent = 'Editar Box';
+    document.getElementById('b_nombre').value = nombre;
+    document.getElementById('b_tipo_box_id').value = tipoBoxId;
+    document.getElementById('b_orden').value = orden;
+    document.getElementById('b_activo').value = activo ? '1' : '0';
+    new bootstrap.Modal(document.getElementById('modalBox')).show();
+}
+
+async function toggleBox(id) {
+    let r = await fetch('/admin/boxes/' + id + '/toggle', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content }
+    });
+    let d = await r.json();
+    if (d.success) location.reload();
+}
+
+document.getElementById('modalBox').addEventListener('hidden.bs.modal', function () {
+    resetForm();
+});
+</script>
+{% endblock %}

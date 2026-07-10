@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Reserva Confirmada — Exclusive Auto Detail{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+<style>
+body {
+    background: var(--color-bg-0);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    padding-top: var(--space-7);
+}
+.confirmacion-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-7);
+    text-align: center;
+}
+.check-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-success-tint);
+    border: 3px solid var(--color-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-5);
+    font-size: 2rem;
+    color: var(--color-success);
+}
+.numero-reserva {
+    font: var(--text-title-lg);
+    color: var(--color-brand);
+    line-height: 1;
+    margin-bottom: var(--space-1);
+}
+.label-reserva {
+    font: var(--text-overline);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+}
+.detalle-card {
+    background: var(--color-bg-1);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    text-align: left;
+    margin-bottom: var(--space-4);
+}
+.detalle-card h6 {
+    font: var(--text-overline);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-3);
+}
+.detalle-card p {
+    font: var(--text-body);
+    margin-bottom: var(--space-1);
+}
+.detalle-card p.small,
+.detalle-card p[style*="font-size:0.85rem"] {
+    font: var(--text-caption);
+    color: var(--color-text-secondary);
+}
+.servicio-item {
+    display: inline-block;
+    background: var(--color-brand-tint);
+    color: var(--color-brand);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font: var(--text-caption);
+    font-weight: 600;
+    margin: var(--space-1);
+}
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 2px solid var(--color-brand);
+    font: var(--text-body-strong);
+}
+.total-row span:last-child {
+    color: var(--color-brand);
+    font: var(--text-title-sm);
+}
+.mensaje {
+    background: var(--color-brand-tint);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4);
+    font: var(--text-body);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+}
+.mensaje i {
+    color: var(--color-brand);
+}
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: center;
+}
+.whatsapp-btn {
+    background: var(--color-success);
+    color: #fff;
+}
+.whatsapp-btn:hover {
+    filter: brightness(0.9);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirmacion-container">
+    <div class="check-icon"><i class="fa-solid fa-check"></i></div>
+    <div class="numero-reserva">#{{ reserva.id }}</div>
+    <div class="label-reserva">Numero de Reserva</div>
+
+    <div class="detalle-card">
+        <h6>Cliente</h6>
+        <p>{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</p>
+        {% if reserva.cliente.cedula %}<p style="color:var(--color-text-secondary);font-size:0.85rem;">CI: {{ reserva.cliente.cedula }}</p>{% endif %}
+        <p style="color:var(--color-text-secondary);font-size:0.85rem;">{{ reserva.cliente.telefono }}</p>
+    </div>
+
+    <div class="detalle-card">
+        <h6>Vehiculo</h6>
+        {% set v = reserva.vehiculo %}
+        {% if v %}
+        <p>
+            {% if v.marca %}{{ v.marca.nombre }} {% elif v.marca_texto %}{{ v.marca_texto }} {% endif %}
+            {% if v.modelo %}{{ v.modelo.nombre }}{% elif v.modelo_texto %}{{ v.modelo_texto }}{% endif %}
+            {% if v.anio %}({{ v.anio }}){% endif %}
+            {% if v.color %} — {{ v.color }}{% endif %}
+        </p>
+        <p style="color:var(--color-text-secondary);font-size:0.85rem;">
+            {{ v.tipo_vehiculo.nombre if v.tipo_vehiculo else '' }}
+            {{ ' / ' + v.segmento.nombre if v.segmento else '' }}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Servicio</h6>
+        {% if reserva.servicio %}
+        <p style="font-weight:700;">{{ reserva.servicio.nombre }}</p>
+        {% endif %}
+        <p style="font-size:0.85rem;color:var(--color-text-secondary);">
+            Suciedad: {{ reserva.nivel_suciedad.nombre if reserva.nivel_suciedad else '' }}
+        </p>
+
+        {% set adicionales = reserva.adicionales %}
+        {% if adicionales %}
+        <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--color-border);">
+            {% for item in adicionales %}
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:var(--space-1) 0;color:var(--color-text-secondary);">
+                <span>{{ item.servicio.nombre if item.servicio else '' }}</span>
+                <span>{% if item.precio_aplicado %}Gs {{ item.precio_aplicado | thousandsep }}{% else %}—{% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="total-row">
+            <span>Total estimado</span>
+            {% set total = reserva.precio_estimado_base + reserva.precio_estimado_adicionales %}
+            <span>Gs {{ total | thousandsep }}</span>
+        </div>
+        {% if reserva.duracion_total_min %}
+        <p style="color:var(--color-text-secondary);font-size:0.8rem;margin-top:var(--space-1);">
+            Duracion estimada: {{ reserva.duracion_total_min }} min
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Fecha y Hora</h6>
+        <p>{{ reserva.fecha.strftime('%A %d de %B de %Y') | capitalize }}</p>
+        <p style="color:var(--color-text-secondary);font-size:0.85rem;">
+            {{ reserva.hora_inicio.strftime('%H:%M') }} hs · {{ reserva.duracion_total_min }} min
+        </p>
+        {% if reserva.fecha_entrega_estimada and reserva.fecha_entrega_estimada != reserva.fecha %}
+        <p style="color:var(--color-brand);font-size:0.85rem;font-weight:600;margin-top:var(--space-1);">
+            Entrega estimada: {{ reserva.fecha_entrega_estimada.strftime('%A %d de %B de %Y') | capitalize }}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-card">
+        <h6>Estado</h6>
+        <span class="servicio-item">{{ reserva.estado.nombre }}</span>
+    </div>
+
+    <div class="mensaje">
+        <i class="fa-regular fa-circle-check me-2"></i>
+        Te contactaremos para confirmar tu turno. Si tenes alguna consulta, escribinos por WhatsApp.
+    </div>
+
+    <div class="actions">
+        <a href="https://wa.me/595986802902?text=Hola%20Exclusive%20Auto%20Detail%2C%20tengo%20una%20consulta%20sobre%20mi%20reserva%20%23{{ reserva.id }}" target="_blank" rel="noopener" class="btn-primary whatsapp-btn">
+            <i class="fa-brands fa-whatsapp fa-lg"></i> Consultar por WhatsApp
+        </a>
+        <a href="{{ url_for('main.index') }}" class="btn-secondary">
+            <i class="fa-solid fa-house me-2"></i>Volver al inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

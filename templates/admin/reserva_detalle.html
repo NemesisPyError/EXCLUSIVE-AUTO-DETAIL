@@ -1,0 +1,297 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Reserva #{{ reserva.id }} — Admin{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.25rem;">
+    <h4 style="font-weight:700;margin:0;">Reserva #{{ reserva.id }}</h4>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        {% if whatsapp_link %}
+        <a href="{{ whatsapp_link }}" target="_blank" rel="noopener" class="btn-sm-custom" style="color:#25d366;border-color:#25d366;" title="Enviar confirmacion por WhatsApp" onclick="return confirm('Abrir WhatsApp para enviar confirmacion al cliente?')">
+            <i class="fa-brands fa-whatsapp me-1"></i> Enviar confirmacion
+        </a>
+        {% endif %}
+        <a href="{{ url_for('admin.editar_reserva', reserva_id=reserva.id) }}" class="btn-sm-custom success"><i class="fa-regular fa-pen-to-square me-1"></i> Editar</a>
+        <a href="{{ url_for('admin.listar_reservas') }}" class="btn-sm-custom"><i class="fa-solid fa-arrow-left me-1"></i> Volver</a>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Cliente -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <h5 style="font-weight:700;font-size:0.9rem;margin:0;">Cliente</h5>
+                <span class="badge-estado" style="background:{{ reserva.estado.color_badge }}22;color:{{ reserva.estado.color_badge }};border:1px solid {{ reserva.estado.color_badge }}44;font-size:0.8rem;">
+                    {{ reserva.estado.nombre }}
+                </span>
+            </div>
+            <p style="font-size:0.95rem;font-weight:600;">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</p>
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);"><i class="fa-solid fa-phone me-2"></i>{{ reserva.cliente.telefono }}
+                {% if whatsapp_link %}<a href="{{ whatsapp_link }}" target="_blank" rel="noopener" title="Enviar WhatsApp" style="color:#25d366;margin-left:0.5rem;"><i class="fa-brands fa-whatsapp fa-lg"></i></a>{% endif %}
+            </p>
+            {% if reserva.cliente.cedula %}
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);"><i class="fa-regular fa-id-card me-2"></i>CI: {{ reserva.cliente.cedula }}</p>
+            {% endif %}
+            {% if reserva.observaciones %}
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--color-border);">
+                <i class="fa-regular fa-note-sticky me-2"></i>{{ reserva.observaciones }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Fecha y Servicios -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Fecha y Servicios</h5>
+            <p style="font-size:0.95rem;font-weight:600;">{{ reserva.fecha.strftime('%A %d de %B de %Y') | capitalize }}</p>
+            <p style="font-size:0.9rem;color:var(--color-brand);font-weight:700;">
+                {{ reserva.hora_inicio.strftime('%H:%M') }} hs
+                {% set dur_min = reserva.duracion_total_min or 60 %}
+                {% set fin_h = ((reserva.hora_inicio.hour * 60 + reserva.hora_inicio.minute + dur_min) // 60) %}
+                {% set fin_m = ((reserva.hora_inicio.hour * 60 + reserva.hora_inicio.minute + dur_min) % 60) %}
+                <span style="color:var(--color-text-secondary);">→ {{ '%02d:%02d' % (fin_h % 24, fin_m) }} hs</span>
+            </p>
+            {% if reserva.duracion_total_min %}
+            <p style="font-size:0.8rem;color:var(--color-text-secondary);margin-top:0.25rem;">
+                <i class="fa-regular fa-clock me-1"></i>Duracion estimada: {{ reserva.duracion_total_min }} min
+            </p>
+            {% endif %}
+            {% if reserva.fecha_fin and reserva.fecha_fin != reserva.fecha %}
+            <p style="font-size:0.8rem;color:var(--color-brand);margin-top:0.25rem;">
+                <i class="fa-regular fa-calendar-days me-1"></i>Finaliza: {{ reserva.fecha_fin.strftime('%d/%m/%Y') }}
+            </p>
+            {% endif %}
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--color-border);">
+                {% if reserva.servicio and reserva.servicio.categoria %}
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.servicio.categoria.nombre }}</span>
+                {% endif %}
+                {% if reserva.tipo_lavado %}
+                <span class="badge-estado badge-warning" style="margin:0.15rem;">{{ reserva.tipo_lavado.nombre }}</span>
+                {% endif %}
+                {% if reserva.subtipo_lavado %}
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.subtipo_lavado.nombre }}</span>
+                {% endif %}
+                {% if reserva.tipo_detallado %}
+                <span class="badge-estado badge-brand" style="margin:0.15rem;">{{ reserva.tipo_detallado.nombre }}</span>
+                {% endif %}
+
+                {% if reserva.items %}
+                <div style="margin-top:0.5rem;">
+                    {% for item in reserva.items %}
+                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:0.2rem 0;color:var(--color-text-secondary);">
+                        <span>{{ item.descripcion or item.tipo_item }}</span>
+                        <span style="color:var(--color-brand);">
+                            {% if item.precio_aplicado is not none and item.precio_aplicado != 0 %}
+                            Gs {{ item.precio_aplicado | int | thousandsep }}
+                            {% endif %}
+                            {% if item.tiempo_aplicado_min %} · {{ item.tiempo_aplicado_min }}min{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehiculo -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Vehiculo</h5>
+            {% set v = reserva.vehiculo %}
+            {% if v %}
+            <div class="row g-2">
+                <div class="col-6"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Marca</span><p style="font-size:0.9rem;font-weight:600;">{{ v.marca.nombre if v.marca else v.marca_texto or '--' }}</p></div>
+                <div class="col-6"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Modelo</span><p style="font-size:0.9rem;font-weight:600;">{{ v.modelo.nombre if v.modelo else v.modelo_texto or '--' }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Anio</span><p style="font-size:0.85rem;">{{ v.anio or '--' }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Color</span><p style="font-size:0.85rem;">{{ v.color or '--' }}</p></div>
+                <div class="col-4"><span style="color:var(--color-text-secondary);font-size:0.78rem;">Tipo</span><p style="font-size:0.85rem;">{{ v.tipo_vehiculo.nombre }}</p></div>
+            </div>
+            {% if v.tipo_vehiculo %}
+            <p style="font-size:0.78rem;color:var(--color-brand);margin-top:0.5rem;">{{ v.tipo_vehiculo.nombre }}</p>
+            {% endif %}
+            {% else %}
+            <p class="text-muted-custom">Sin datos de vehiculo.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Asignacion y Precio -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Asignacion y Precio</h5>
+
+            <div style="margin-bottom:0.75rem;">
+                <span style="color:var(--color-text-secondary);font-size:0.78rem;">Empleado asignado</span>
+                <p style="font-size:0.9rem;font-weight:600;">{{ reserva.usuario_asignado.nombre if reserva.usuario_asignado else 'No asignado' }}</p>
+            </div>
+
+            <div class="row g-2">
+                <div class="col-6">
+                    <span style="color:var(--color-text-secondary);font-size:0.78rem;">Precio</span>
+                    <p style="font-size:0.9rem;font-weight:700;color:var(--color-brand);">
+                        {% if reserva.servicio.requiere_inspeccion %}
+                        Gs {{ (reserva.precio_estimado_base or 0) | int | thousandsep }} <small style="color:var(--warning);font-size:0.7rem;">(estimado)</small>
+                        {% else %}
+                        Gs {{ (reserva.precio_final_base or reserva.precio_estimado_base or 0) | int | thousandsep }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-6">
+                    <span style="color:var(--color-text-secondary);font-size:0.78rem;">Tiempo</span>
+                    <p style="font-size:0.9rem;font-weight:600;">{{ reserva.duracion_total_min }} min</p>
+                </div>
+            </div>
+
+            {% if reserva.requiere_inspeccion %}
+            <div class="note note-warning" style="margin-top:0.75rem;">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Requiere inspeccion. El precio final puede variar.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cambiar estado -->
+    <div class="col-12">
+        <div class="admin-card">
+            <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Cambiar Estado</h5>
+            <div class="d-flex align-center gap-2" style="flex-wrap:wrap;">
+                <select id="estadoSelector" class="form-control" style="width:auto;min-width:200px;">
+                    {% for e in estados %}
+                    <option value="{{ e.id }}" {% if e.id == reserva.estado_id %}selected{% endif %}>{{ e.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-sm-custom success" onclick="cambiarEstado({{ reserva.id }})">
+                    <i class="fa-solid fa-check me-1"></i> Guardar
+                </button>
+            </div>
+            <div id="estadoMsg" style="margin-top:0.5rem;font-size:0.82rem;display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Asignar empleado -->
+    <div class="col-12">
+        <div class="admin-card">
+            <h5 style="font-weight:700;font-size:0.9rem;margin-bottom:0.75rem;">Asignar Empleado</h5>
+            <div class="d-flex align-center gap-2" style="flex-wrap:wrap;">
+                <select id="asignadoSelector" class="form-control" style="width:auto;min-width:200px;">
+                    <option value="">-- Sin asignar --</option>
+                    {% for emp in empleados %}
+                    <option value="{{ emp.id }}" {% if reserva.usuario_asignado_id == emp.id %}selected{% endif %}>{{ emp.nombre }} ({{ emp.rol | capitalize }})</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-sm-custom success" onclick="asignarEmpleado({{ reserva.id }})">
+                    <i class="fa-solid fa-user-check me-1"></i> Asignar
+                </button>
+            </div>
+            <div id="asignadoMsg" style="margin-top:0.5rem;font-size:0.82rem;display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Fechas de creacion -->
+    <div class="col-12">
+        <div class="admin-card">
+            <div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.8rem;color:var(--color-text-secondary);">
+                <span>Creado: {{ reserva.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                <span>Actualizado: {{ reserva.updated_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                <span style="margin-left:auto;">
+                    <button type="button" class="btn-sm-custom danger" onclick="confirmarEliminar({{ reserva.id }})">
+                        <i class="fa-regular fa-trash-can me-1"></i> Eliminar reserva
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h6 style="font-weight:700;margin:0;">Confirmar eliminacion</h6></div>
+            <div class="modal-body" style="font-size:0.85rem;color:var(--color-text-secondary);">
+                Estas seguro de eliminar la reserva <strong style="color:var(--color-text-primary);">#{{ reserva.id }}</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('admin.eliminar_reserva', reserva_id=reserva.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-sm-custom" style="border-color:var(--danger);color:var(--danger);">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function cambiarEstado(reservaId) {
+    var estadoId = parseInt(document.getElementById('estadoSelector').value);
+    var msg = document.getElementById('estadoMsg');
+    msg.style.display = 'none';
+
+    fetch('/admin/reservas/' + reservaId + '/estado', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+        },
+        body: JSON.stringify({ estado_id: estadoId })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#9bddb0;';
+            msg.textContent = 'Estado actualizado a "' + data.estado_nombre + '"';
+            setTimeout(function() { location.reload(); }, 1200);
+        } else {
+            msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#f5a3a3;';
+            msg.textContent = (data.error || 'Error al actualizar');
+        }
+    })
+    .catch(function() {
+        msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#f5a3a3;';
+        msg.textContent = 'Error de conexion';
+    });
+}
+
+function asignarEmpleado(reservaId) {
+    var empleadoId = document.getElementById('asignadoSelector').value;
+    var msg = document.getElementById('asignadoMsg');
+    msg.style.display = 'none';
+
+    fetch('/admin/reservas/' + reservaId + '/asignar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+        },
+        body: JSON.stringify({ empleado_id: empleadoId || null })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#9bddb0;';
+            msg.textContent = 'Empleado actualizado: ' + data.empleado_nombre || data.mensaje;
+            setTimeout(function() { location.reload(); }, 1200);
+        } else {
+            msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#f5a3a3;';
+            msg.textContent = (data.error || 'Error');
+        }
+    })
+    .catch(function() {
+        msg.style.cssText = 'margin-top:0.5rem;font-size:0.82rem;display:block;color:#f5a3a3;';
+        msg.textContent = 'Error de conexion';
+    });
+}
+
+function confirmarEliminar(id) {
+    var modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+    modal.show();
+}
+</script>
+{% endblock %}

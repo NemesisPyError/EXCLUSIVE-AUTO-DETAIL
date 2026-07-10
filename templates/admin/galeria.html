@@ -1,0 +1,523 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Galería — Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .galeria-admin-grid {
+        display: grid;
+        gap: 0.45rem;
+    }
+    .galeria-admin-grid.auto   { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); }
+    .galeria-admin-grid.one    { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
+    .galeria-admin-grid.two    { grid-template-columns: repeat(2, 1fr); max-width: 600px; }
+    .galeria-admin-grid.three  { grid-template-columns: repeat(3, 1fr); max-width: 660px; }
+    .galeria-admin-card {
+        background: var(--color-bg-0);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+    .galeria-admin-card img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        display: block;
+        transition: height 0.25s ease;
+    }
+    .one .galeria-admin-card img    { height: 250px; }
+    .two .galeria-admin-card img    { height: 140px; }
+    .three .galeria-admin-card img  { height: 115px; }
+    @media (max-width: 700px) {
+        .one, .two, .three {
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            max-width: none;
+        }
+        .one .galeria-admin-card img,
+        .two .galeria-admin-card img,
+        .three .galeria-admin-card img { height: 130px; }
+    }
+    .galeria-admin-card .acciones {
+        display: flex;
+        gap: 0.2rem;
+        padding: 0.25rem 0.4rem;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .galeria-admin-card .orden-btns { display: flex; gap: 0.2rem; }
+    .galeria-admin-card .badge-count {
+        position: absolute; top: 0.25rem; left: 0.25rem;
+        background: rgba(0,0,0,0.7); color: #fff; font-size: 0.62rem;
+        padding: 0.08rem 0.38rem; border-radius: 20px; font-weight: 600;
+    }
+    .galeria-admin-grid .btn-sm-custom {
+        padding: 0.2rem 0.45rem;
+        font-size: 0.68rem;
+        border-radius: 5px;
+    }
+    .galeria-admin-categoria {
+        margin-bottom: 0.6rem;
+    }
+    .galeria-admin-categoria > h6 {
+        display: flex; align-items: center; gap: 0.35rem;
+        font-weight: 700; margin-bottom: 0.25rem;
+        text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.72rem;
+    }
+    .galeria-admin-categoria .cat-count {
+        color: var(--color-text-secondary); font-size: 0.65rem; font-weight: 600;
+        background: var(--color-bg-1); padding: 0.1rem 0.45rem; border-radius: 20px;
+    }
+    .drop-area {
+        border: 2px dashed var(--color-border);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 0.8rem;
+    }
+    .drop-area:hover, .drop-area.dragover {
+        border-color: var(--color-brand);
+        color: var(--color-brand);
+        background: rgba(26,107,255,0.05);
+    }
+    .preview-thumbs {
+        display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem;
+    }
+    .preview-thumbs img {
+        width: 48px; height: 48px; object-fit: cover; border-radius: 5px;
+        border: 1px solid var(--color-border);
+    }
+    .empty-cats {
+        text-align: center; padding: 1.25rem; color: var(--color-text-secondary); font-size: 0.82rem;
+    }
+    .cat-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+        gap: 0.35rem;
+    }
+    .cat-chip {
+        background: var(--color-bg-0);
+        border: 1px solid var(--color-border);
+        border-radius: 7px;
+        padding: 0.3rem 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.3rem;
+    }
+    .cat-chip .cat-name { font-weight: 600; font-size: 0.74rem; }
+    .cat-chip .cat-meta { font-size: 0.63rem; color: var(--color-text-secondary); }
+    .cat-chip.inactive .cat-name { color: var(--color-text-secondary); }
+    .cat-chip .cat-actions { display: flex; gap: 0.12rem; align-items: center; }
+    .cat-chip .mini-btn {
+        background: transparent; border: 1px solid var(--color-border); color: var(--color-text-secondary);
+        border-radius: 4px; width: 22px; height: 22px; cursor: pointer; font-size: 0.65rem;
+        display: flex; align-items: center; justify-content: center; transition: 0.2s;
+    }
+    .cat-chip .mini-btn:hover { color: var(--color-brand); border-color: var(--color-brand); }
+    .cat-chip .mini-btn.danger:hover { color: var(--color-danger); border-color: var(--color-danger); }
+    .section-label {
+        font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px;
+        color: var(--color-text-secondary); font-weight: 700; margin: 0 0 0.25rem 0;
+    }
+    .section-label .muted { font-weight: 500; text-transform: none; letter-spacing: 0; }
+    .gallery-admin-card-compact { padding: 0.8rem !important; height: auto !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.6rem;">
+    <h4 style="font-weight:700;margin:0;">Galería</h4>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button type="button" class="btn-sm-custom" data-bs-toggle="modal" data-bs-target="#modalCat" onclick="abrirCrearCat()">
+            <i class="fa-solid fa-folder-plus me-1"></i> Nueva Categoría
+        </button>
+        <button type="button" class="btn-sm-custom success" data-bs-toggle="modal" data-bs-target="#modalCrear">
+            <i class="fa-solid fa-plus me-1"></i> Subir Imágenes
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================
+     PANEL DE CATEGORÍAS
+     ============================================================ -->
+<div class="admin-card gallery-admin-card-compact" style="margin-bottom:0.75rem;">
+    <p class="section-label">Categorías <span class="muted">— agregá, renombrá, reordená o eliminá las categorías de la galería</span></p>
+    {% if categorias %}
+    <div class="cat-panel" id="catPanel">
+        {% for cat in categorias %}
+        <div class="cat-chip {% if not cat.activo %}inactive{% endif %}" data-id="{{ cat.id }}">
+            <div>
+                <div class="cat-name">{{ cat.nombre }}</div>
+                <div class="cat-meta">{{ cat.imagenes|length }} img{% if not cat.activo %} · inactiva{% endif %}</div>
+            </div>
+            <div class="cat-actions">
+                <button type="button" class="mini-btn" title="Subir" onclick="moverCat(this, -1)"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" class="mini-btn" title="Bajar" onclick="moverCat(this, 1)"><i class="fa-solid fa-arrow-down"></i></button>
+                <button type="button" class="mini-btn" title="Renombrar"
+                        onclick="abrirEditarCat({{ cat.id }})">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <form method="POST" action="{{ url_for('admin.eliminar_categoria_galeria', cat_id=cat.id) }}" style="display:inline;"
+                      onsubmit="return confirm('¿Eliminar la categoría «{{ cat.nombre }}» y TODAS sus imágenes?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="mini-btn danger" title="Eliminar"><i class="fa-regular fa-trash-can"></i></button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-cats" style="padding:1.5rem;">Todavía no hay categorías. Hacé clic en <strong>Nueva Categoría</strong> para empezar.</p>
+    {% endif %}
+</div>
+
+<!-- ============================================================
+     IMÁGENES POR CATEGORÍA
+     ============================================================ -->
+<p class="section-label">Imágenes por categoría</p>
+
+{% if grupos %}
+{% for cat, items in grupos.items() %}
+<div class="admin-card gallery-admin-card-compact galeria-admin-categoria" data-categoria="{{ cat.nombre }}">
+    <h6>
+        <i class="fa-regular fa-images" style="color:var(--color-brand);"></i>
+        {{ cat.nombre }}
+        <span class="cat-count">{{ items|length }} img</span>
+    </h6>
+    <div class="galeria-admin-grid {% if items|length == 1 %}one{% elif items|length == 2 %}two{% elif items|length == 3 %}three{% else %}auto{% endif %}" data-cat="{{ cat.nombre }}" data-count="{{ items|length }}">
+        {% for it in items %}
+        <div class="galeria-admin-card" data-id="{{ it.id }}" data-orden="{{ it.orden }}">
+            <span class="badge-count">#{{ loop.index }}</span>
+            <img src="{{ it.url_thumb or it.url_imagen }}" alt="{{ it.titulo }}" loading="lazy"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22140%22><rect fill=%22%23222%22 width=%22180%22 height=%22140%22/></svg>'">
+            <div style="padding:0.22rem 0.4rem;font-size:0.68rem;color:var(--color-text-secondary);">
+                {{ it.titulo }}
+                {% if not it.activo %}<span style="color:var(--color-danger);">(inactivo)</span>{% endif %}
+            </div>
+            <div class="acciones">
+                <div class="orden-btns">
+                    <button type="button" class="btn-sm-custom" title="Subir"
+                            onclick="moverItem(this, -1)"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button type="button" class="btn-sm-custom" title="Bajar"
+                            onclick="moverItem(this, 1)"><i class="fa-solid fa-arrow-down"></i></button>
+                </div>
+                <div style="display:flex;gap:0.3rem;">
+                    <button type="button" class="btn-sm-custom" title="Editar"
+                            onclick="editarItem({{ it.id }})">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('admin.eliminar_galeria', item_id=it.id) }}" style="display:inline;"
+                          onsubmit="return confirm('¿Eliminar esta imagen?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-sm-custom danger" title="Eliminar"><i class="fa-regular fa-trash-can"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="admin-card empty-cats">
+    <i class="fa-regular fa-image" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
+    No hay imágenes todavía. Creá una categoría y después subí imágenes con <strong>Subir Imágenes</strong>.
+</div>
+{% endif %}
+
+<!-- Modal Crear/Editar Categoría -->
+<div class="modal fade" id="modalCat" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" id="formCat">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="cat_id" id="cat_id">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;" id="modalCatTitle">Nueva Categoría</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la categoría *</label>
+                        <input type="text" class="form-control" name="nombre" id="cat_nombre" required maxlength="120"
+                               placeholder="Ej: Antes y Después"
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
+                    </div>
+                    <div>
+                        <label class="form-check-label" style="font-size:0.85rem;">
+                            <input type="checkbox" name="activo" value="1" id="cat_activo" checked class="form-check-input" style="margin-right:0.5rem;">
+                            Activa (visible en la galería pública)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear (Subir Imágenes) -->
+<div class="modal fade" id="modalCrear" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.crear_galeria') }}" enctype="multipart/form-data" id="formCrear">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;">Subir Imágenes</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Categoría *</label>
+                        <select class="form-control" name="categoria_id" id="crear_categoria_id" required
+                                style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
+                            <option value="">— Seleccioná una categoría —</option>
+                            {% for c in categorias %}
+                            <option value="{{ c.id }}">{{ c.nombre }}{% if not c.activo %} (inactiva){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <small style="color:var(--color-text-secondary);font-size:0.75rem;">¿No ves la categoría? Cerrá y usá <strong>Nueva Categoría</strong>.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Título (opcional, se aplica a todas)</label>
+                        <input type="text" class="form-control" name="titulo" id="crear_titulo"
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción (opcional)</label>
+                        <textarea class="form-control" name="descripcion" rows="2"
+                                  style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imágenes *</label>
+                        <div class="drop-area" id="dropArea" onclick="document.getElementById('inputFiles').click()">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                            Arrastrá imágenes aquí o hacé clic para seleccionar<br>
+                            <small>PNG, JPG, JPEG, WEBP, GIF — varias a la vez</small>
+                        </div>
+                        <input type="file" name="imagenes" id="inputFiles" multiple accept="image/*" style="display:none;" required>
+                        <div class="preview-thumbs" id="previewThumbs"></div>
+                    </div>
+                    <div>
+                        <label class="form-check-label" style="font-size:0.85rem;">
+                            <input type="checkbox" name="activo" value="1" checked class="form-check-input" style="margin-right:0.5rem;">
+                            Activas
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Subir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="formEditar" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;">Editar Imagen</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Categoría *</label>
+                        <select class="form-control" name="categoria_id" id="editar_categoria_id" required
+                                style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
+                            {% for c in categorias %}
+                            <option value="{{ c.id }}">{{ c.nombre }}{% if not c.activo %} (inactiva){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" class="form-control" name="titulo" id="editar_titulo"
+                               style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" id="editar_descripcion" rows="2"
+                                  style="background:var(--color-bg-0);border-color:var(--color-border);color:var(--color-text-primary);"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reemplazar imagen (opcional)</label>
+                        <input type="file" name="imagen" accept="image/*"
+                               style="font-size:0.8rem;color:var(--color-text-secondary);">
+                    </div>
+                    <div>
+                        <label class="form-check-label" style="font-size:0.85rem;">
+                            <input type="checkbox" name="activo" value="1" id="editar_activo" class="form-check-input" style="margin-right:0.5rem;">
+                            Activa
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="application/json" id="galeriaData">{{ galeria_data|safe }}</script>
+<script type="application/json" id="categoriasData">{{ categorias_data|safe }}</script>
+<script>
+// ---- Preview de imágenes al subir ----
+const inputFiles = document.getElementById('inputFiles');
+const dropArea = document.getElementById('dropArea');
+const previewThumbs = document.getElementById('previewThumbs');
+
+if (inputFiles) {
+    function mostrarPreview(files) {
+        previewThumbs.innerHTML = '';
+        Array.from(files).forEach(function (f) {
+            if (!f.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                previewThumbs.appendChild(img);
+            };
+            reader.readAsDataURL(f);
+        });
+    }
+    inputFiles.addEventListener('change', function () { mostrarPreview(this.files); });
+    ['dragover', 'dragenter'].forEach(function (ev) {
+        dropArea.addEventListener(ev, function (e) { e.preventDefault(); dropArea.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+        dropArea.addEventListener(ev, function (e) { e.preventDefault(); dropArea.classList.remove('dragover'); });
+    });
+    dropArea.addEventListener('drop', function (e) {
+        inputFiles.files = e.dataTransfer.files;
+        mostrarPreview(e.dataTransfer.files);
+    });
+    document.getElementById('modalCrear').addEventListener('hidden.bs.modal', function () {
+        previewThumbs.innerHTML = '';
+        document.getElementById('formCrear').reset();
+    });
+}
+
+// ---- Datos de items para edición ----
+const GALERIA_ITEMS = (() => {
+    try { return JSON.parse(document.getElementById('galeriaData').textContent); }
+    catch (e) { return []; }
+})();
+
+const CATEGORIAS = (() => {
+    try { return JSON.parse(document.getElementById('categoriasData').textContent); }
+    catch (e) { return []; }
+})();
+
+// ---- Editar imagen ----
+function editarItem(id) {
+    const item = GALERIA_ITEMS.find(function (i) { return i.id === id; });
+    if (!item) { alert('Imagen no encontrada.'); return; }
+    document.getElementById('formEditar').action = '/admin/galeria/' + id + '/editar';
+    document.getElementById('editar_categoria_id').value = item.categoria_id;
+    document.getElementById('editar_titulo').value = item.titulo;
+    document.getElementById('editar_descripcion').value = item.descripcion || '';
+    document.getElementById('editar_activo').checked = !!item.activo;
+    var modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modal.show();
+}
+
+// ---- Categorías: crear / editar / reordenar ----
+function abrirCrearCat() {
+    document.getElementById('modalCatTitle').textContent = 'Nueva Categoría';
+    document.getElementById('formCat').action = '/admin/galeria/categorias/crear';
+    document.getElementById('cat_id').value = '';
+    document.getElementById('cat_nombre').value = '';
+    document.getElementById('cat_activo').checked = true;
+}
+
+function abrirEditarCat(id) {
+    const cat = CATEGORIAS.find(function (c) { return c.id === id; });
+    if (!cat) { alert('Categoría no encontrada.'); return; }
+    document.getElementById('modalCatTitle').textContent = 'Editar Categoría';
+    document.getElementById('formCat').action = '/admin/galeria/categorias/' + id + '/editar';
+    document.getElementById('cat_id').value = id;
+    document.getElementById('cat_nombre').value = cat.nombre;
+    document.getElementById('cat_activo').checked = !!cat.activo;
+    var modal = new bootstrap.Modal(document.getElementById('modalCat'));
+    modal.show();
+}
+
+function moverCat(btn, direccion) {
+    const chip = btn.closest('.cat-chip');
+    const panel = chip.parentElement;
+    const chips = Array.from(panel.children);
+    const idx = chips.indexOf(chip);
+    const nuevo = idx + direccion;
+    if (nuevo < 0 || nuevo >= chips.length) return;
+    if (direccion > 0) panel.insertBefore(chip, chips[nuevo].nextSibling);
+    else panel.insertBefore(chip, chips[nuevo]);
+    guardarOrdenCats(panel);
+}
+
+function guardarOrdenCats(panel) {
+    const ordenes = [];
+    Array.from(panel.children).forEach(function (c, i) {
+        ordenes.push({ id: parseInt(c.dataset.id), orden: i + 1 });
+    });
+    const csrf = document.querySelector('input[name="csrf_token"]').value;
+    fetch('/admin/galeria/categorias/reordenar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ ordenes: ordenes })
+    }).then(function (r) { return r.json(); })
+      .then(function (d) { if (!d.success) alert('Error al reordenar categorías.'); })
+      .catch(function () { alert('Error de conexión al reordenar.'); });
+}
+
+// ---- Reordenar (subir/bajar) ----
+function moverItem(btn, direccion) {
+    const card = btn.closest('.galeria-admin-card');
+    const grid = card.parentElement;
+    const cards = Array.from(grid.children);
+    const idx = cards.indexOf(card);
+    const nuevo = idx + direccion;
+    if (nuevo < 0 || nuevo >= cards.length) return;
+
+    if (direccion > 0) grid.insertBefore(card, cards[nuevo].nextSibling);
+    else grid.insertBefore(card, cards[nuevo]);
+
+    guardarOrden(grid);
+}
+
+function guardarOrden(grid) {
+    const ordenes = [];
+    Array.from(grid.children).forEach(function (c, i) {
+        ordenes.push({ id: parseInt(c.dataset.id), orden: i + 1 });
+    });
+    const csrf = document.querySelector('input[name="csrf_token"]').value;
+    fetch('/admin/galeria/reordenar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrf,
+        },
+        body: JSON.stringify({ ordenes: ordenes })
+    }).then(function (r) { return r.json(); })
+      .then(function (d) {
+          if (!d.success) alert('Error al reordenar.');
+      })
+      .catch(function () { alert('Error de conexión al reordenar.'); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Servicios — Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .color-gratis { background: var(--color-success-tint); color: var(--color-success); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.25rem;">
+    <h4 style="font-weight:700;margin:0;">Servicios</h4>
+    <button type="button" class="btn-sm-custom success" data-bs-toggle="modal" data-bs-target="#modalServicio">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo Servicio
+    </button>
+</div>
+
+<div class="admin-card">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Tiempo</th>
+                    <th>Activo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in servicios %}
+                {% set min_precio = precios_map.get(s.id, 0) %}
+                {% set min_duracion = duraciones_map.get(s.id, 0) %}
+                {% set horas = min_duracion // 60 %}
+                {% set mins = min_duracion % 60 %}
+                <tr>
+                    <td style="font-weight:600;">{{ s.nombre }}</td>
+                    <td style="font-size:0.8rem;color:var(--color-text-secondary);">{{ s.categoria.nombre if s.categoria else '--' }}</td>
+                    <td>{% if min_precio == 0 %}<span class="badge-estado color-gratis">Gratis</span>{% else %}₲ {{ min_precio | int | thousandsep }}{% endif %}</td>
+                    <td style="font-size:0.8rem;">{{ '%dh%02dmin' % (horas, mins) if min_duracion else '--' }}</td>
+                    <td>
+                        <label class="toggle-switch" style="position:relative;display:inline-block;width:40px;height:22px;">
+                            <input type="checkbox" class="toggle-servicio" data-id="{{ s.id }}" {% if s.activo %}checked{% endif %}
+                                   style="opacity:0;width:0;height:0;">
+                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if s.activo %}var(--color-brand){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
+                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);top:2px;left:{% if s.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
+                            </span>
+                        </label>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:0.35rem;">
+                            <button type="button" class="btn-sm-custom" title="Editar"
+                                onclick="editarServicio({{ s.id }}, '{{ s.nombre|e }}', '{{ s.categoria.id if s.categoria else '' }}', '{{ s.descripcion|e }}', {{ min_precio }}, {{ min_duracion }}, '{{ s.categoria.slug if s.categoria else '' }}')">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                            <form method="POST" action="{{ url_for('admin.eliminar_servicio', servicio_id=s.id) }}" style="display:inline;" onsubmit="return confirm('¿Desactivar {{ s.nombre }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-sm-custom danger" title="Desactivar"><i class="fa-regular fa-trash-can"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No hay servicios registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear/Editar Servicio -->
+<div class="modal fade" id="modalServicio" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" id="formServicio" action="{{ url_for('admin.crear_servicio') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;" id="modalServicioTitle">Nuevo Servicio</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="servicio_id" name="servicio_id">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="s_nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-select" id="s_categoria" name="categoria_servicio_id">
+                            {% for c in categorias %}
+                            <option value="{{ c.id }}" data-slug="{{ c.slug }}">{{ c.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" id="s_descripcion" name="descripcion" rows="2"></textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Precio (₲)</label>
+                            <input type="number" class="form-control" id="s_precio" name="precio" step="0.01" min="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Horas</label>
+                            <input type="number" class="form-control" id="s_tiempo_h" name="tiempo_horas" min="0" step="1" placeholder="0">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Minutos</label>
+                            <input type="number" class="form-control" id="s_tiempo_m" name="tiempo_minutos" min="0" max="59" step="1" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="mt-3" id="gratisWrap" style="display:none;">
+                        <label class="form-check-label" style="font-size:0.85rem;">
+                            <input type="checkbox" name="gratis" id="s_gratis" value="1" class="form-check-input" style="margin-right:0.5rem;">
+                            Ofrecer gratis (sin costo)
+                        </label>
+                        <small style="color:var(--color-text-secondary);font-size:0.72rem;display:block;margin-top:0.25rem;margin-left:1.4rem;">
+                            Al activarlo, el precio queda en 0 y el servicio se muestra como "Gratis" en la reserva.
+                        </small>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-check-label" style="font-size:0.85rem;">
+                            <input type="checkbox" name="activo" value="1" checked class="form-check-input" style="margin-right:0.5rem;">
+                            Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>function editarServicio(id, nombre, categoriaId, descripcion, precio, tiempo, categoriaSlug) {
+    document.getElementById('modalServicioTitle').textContent = 'Editar Servicio';
+    document.getElementById('formServicio').action = '/admin/servicios/' + id + '/editar';
+    document.getElementById('s_nombre').value = nombre;
+    document.getElementById('s_categoria').value = categoriaId;
+    document.getElementById('s_descripcion').value = descripcion;
+    document.getElementById('s_precio').value = precio;
+    document.getElementById('s_tiempo_h').value = Math.floor(tiempo / 60);
+    document.getElementById('s_tiempo_m').value = tiempo % 60;
+    actualizarGratis(categoriaSlug, parseFloat(precio) === 0);
+    var modal = new bootstrap.Modal(document.getElementById('modalServicio'));
+    modal.show();
+}
+
+function actualizarGratis(slug, gratisInicial) {
+    const wrap = document.getElementById('gratisWrap');
+    const chk = document.getElementById('s_gratis');
+    const precio = document.getElementById('s_precio');
+    const mostrar = slug === 'retiro_entrega';
+    wrap.style.display = mostrar ? '' : 'none';
+    if (mostrar && gratisInicial !== undefined) {
+        chk.checked = gratisInicial;
+    }
+    if (!mostrar) chk.checked = false;
+    precio.disabled = chk.checked;
+    if (chk.checked) precio.value = 0;
+}
+
+document.getElementById('s_categoria').addEventListener('change', function () {
+    var selectedOption = this.options[this.selectedIndex];
+    var slug = selectedOption.getAttribute('data-slug') || '';
+    actualizarGratis(slug);
+});
+
+document.getElementById('s_gratis').addEventListener('change', function () {
+    const precio = document.getElementById('s_precio');
+    precio.disabled = this.checked;
+    if (this.checked) precio.value = 0;
+});
+
+// Reset modal on new
+document.getElementById('modalServicio').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('modalServicioTitle').textContent = 'Nuevo Servicio';
+    document.getElementById('formServicio').action = '/admin/servicios/crear';
+    document.getElementById('formServicio').reset();
+    document.getElementById('gratisWrap').style.display = 'none';
+    document.getElementById('s_precio').disabled = false;
+});
+</script>
+{% endblock %}

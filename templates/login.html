@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar — Exclusive Auto Detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <style>
+        body {
+            font-family: var(--font-family);
+            background:
+                radial-gradient(circle at 50% 30%, rgba(26, 107, 255, 0.06), transparent 60%),
+                var(--color-bg-0);
+            color: var(--color-text-secondary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-5);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: var(--space-5);
+        }
+        .logo h1 {
+            font: var(--text-title-md);
+            color: var(--color-text-primary);
+        }
+        .logo span {
+            color: var(--color-brand);
+        }
+        .logo p {
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            margin-top: var(--space-1);
+        }
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin-top: var(--space-4);
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: color var(--duration-base) var(--easing-standard);
+        }
+        .forgot-link:hover {
+            color: var(--color-text-primary);
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: var(--space-5);
+            font: var(--text-overline);
+            text-transform: none;
+            letter-spacing: normal;
+            color: var(--color-text-tertiary);
+        }
+        .form-group {
+            margin-bottom: var(--space-4);
+        }
+        label {
+            display: block;
+            font: var(--text-caption);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-1);
+        }
+        form .btn-primary {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="ead-card" style="padding:var(--space-5) var(--space-4);max-width:400px;">
+        <div class="logo">
+            <h1>Exclusive <span>Auto Detail</span></h1>
+            <p>Panel de administración</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="ead-alert ead-alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email"
+                       placeholder="tu@email.com" required autofocus class="ead-input">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password"
+                       placeholder="Ingresa tu contrasena" required class="ead-input">
+            </div>
+            <button type="submit" class="btn-primary">Ingresar</button>
+        </form>
+
+        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">
+            Olvidaste tu contrasena?
+        </a>
+
+        <div class="footer-text">
+            &copy; 2026 Exclusive Auto Detail
+        </div>
+    </div>
+</body>
+</html>

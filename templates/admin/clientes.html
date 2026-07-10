@@ -1,0 +1,165 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Clientes — Admin{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem;">
+    <h4 style="font-weight:700;margin:0;">Clientes</h4>
+</div>
+
+<form method="GET" class="filtros-admin">
+    <input type="text" name="buscar" placeholder="Buscar por nombre, cédula o teléfono..." value="{{ buscar }}">
+    <button type="submit"><i class="fa-solid fa-search me-1"></i> Buscar</button>
+    {% if buscar %}<a href="{{ url_for('admin.listar_clientes') }}" class="btn-link-custom">Limpiar</a>{% endif %}
+</form>
+
+<div class="admin-card" style="padding: 1rem !important;">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Cédula</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Reservas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes %}
+                <tr>
+                    <td>#{{ c.id }}</td>
+                    <td style="font-weight:600;">{{ c.nombre }}</td>
+                    <td>{{ c.apellido }}</td>
+                    <td style="font-size:0.82rem;color:var(--color-text-secondary);">{{ c.cedula }}</td>
+                    <td style="font-size:0.82rem;">{{ c.telefono }}</td>
+                    <td style="font-size:0.78rem;color:var(--color-text-secondary);">{{ c.email or '—' }}</td>
+                    <td>
+                        <span class="badge-estado badge-brand" style="font-size:0.75rem;">
+                            {{ reservas_counts.get(c.id, 0) }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:0.35rem;">
+                            <button type="button" class="btn-sm-custom" title="Editar"
+                                    onclick="editarCliente({{ c.id }})">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                            {% if reservas_counts.get(c.id, 0) == 0 %}
+                            <form method="POST" action="{{ url_for('admin.eliminar_cliente', cliente_id=c.id) }}" style="display:inline;"
+                                  onsubmit="return confirm('¿Eliminar a {{ c.nombre }} {{ c.apellido }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-sm-custom danger" title="Eliminar"><i class="fa-regular fa-trash-can"></i></button>
+                            </form>
+                            {% else %}
+                            <button type="button" class="btn-sm-custom danger" disabled title="Tiene reservas asociadas" style="opacity:0.35;cursor:not-allowed;">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No se encontraron clientes.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if paginacion.pages > 1 %}
+    <div class="pagination-admin">
+        {% if paginacion.has_prev %}
+        <a href="{{ url_for('admin.listar_clientes', page=paginacion.prev_num, buscar=buscar) }}"><i class="fa-solid fa-chevron-left"></i></a>
+        {% endif %}
+        {% for p in range(1, paginacion.pages + 1) %}
+            {% if p == paginacion.page %}
+            <span class="active-page">{{ p }}</span>
+            {% elif p <= 3 or p > paginacion.pages - 3 or (p >= paginacion.page - 1 and p <= paginacion.page + 1) %}
+            <a href="{{ url_for('admin.listar_clientes', page=p, buscar=buscar) }}">{{ p }}</a>
+            {% elif p == 4 or p == paginacion.pages - 3 %}
+            <span style="border:none;">...</span>
+            {% endif %}
+        {% endfor %}
+        {% if paginacion.has_next %}
+        <a href="{{ url_for('admin.listar_clientes', page=paginacion.next_num, buscar=buscar) }}"><i class="fa-solid fa-chevron-right"></i></a>
+        {% endif %}
+        <span style="font-size:0.78rem;color:var(--color-text-secondary);margin-left:0.5rem;">{{ paginacion.total }} clientes</span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Editar Cliente -->
+<div class="modal fade" id="modalCliente" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="formCliente">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;">Editar Cliente</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="cliente_id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" id="c_nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" class="form-control" id="c_apellido" name="apellido" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Cédula</label>
+                            <input type="text" class="form-control" id="c_cedula" name="cedula">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="c_telefono" name="telefono">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="c_email" name="email">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="c_observaciones" name="observaciones" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="application/json" id="clientesData">{{ clientes_data|safe }}</script>
+<script>
+const CLIENTES = (() => {
+    try { return JSON.parse(document.getElementById('clientesData').textContent); }
+    catch (e) { return []; }
+})();
+
+function editarCliente(id) {
+    const c = CLIENTES.find(x => x.id === id);
+    if (!c) { alert('Cliente no encontrado.'); return; }
+    document.getElementById('formCliente').action = '/admin/clientes/' + id + '/editar';
+    document.getElementById('c_nombre').value = c.nombre;
+    document.getElementById('c_apellido').value = c.apellido;
+    document.getElementById('c_cedula').value = c.cedula;
+    document.getElementById('c_telefono').value = c.telefono;
+    document.getElementById('c_email').value = c.email || '';
+    document.getElementById('c_observaciones').value = c.observaciones || '';
+    var modal = new bootstrap.Modal(document.getElementById('modalCliente'));
+    modal.show();
+}
+</script>
+{% endblock %}

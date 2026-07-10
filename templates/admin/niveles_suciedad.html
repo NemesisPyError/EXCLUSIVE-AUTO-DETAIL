@@ -1,0 +1,61 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Niveles de Suciedad — Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Niveles de Suciedad</h5>
+    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalItem" onclick="resetForm()">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo
+    </button>
+</div>
+{% if items %}
+<table class="table-admin">
+    <thead><tr><th>Nombre</th><th>Slug</th><th>Orden</th><th style="width:100px;">Acciones</th></tr></thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+        <td><strong>{{ item.nombre }}</strong>{% if item.descripcion %}<br><small class="text-muted-custom">{{ item.descripcion }}</small>{% endif %}</td>
+        <td>{{ item.slug }}</td>
+        <td>{{ item.orden }}</td>
+        <td><button class="btn-secondary" onclick='editarItem({{ item.id }}, "{{ item.nombre|e }}", "{{ (item.descripcion or "")|e }}", {{ item.orden }})'><i class="fa-solid fa-pen"></i></button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="text-center text-muted-custom py-5">No hay registros.</div>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalItem" tabindex="-1">
+    <div class="modal ead-modal-dialog">
+        <form class="modal ead-modal-content" method="post" id="formItem" action="/admin/niveles-suciedad/crear">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header"><h5 class="modal ead-modal-title" id="modalItemTitle">Nuevo Nivel de Suciedad</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal ead-modal-body">
+                <div class="mb-3"><label class="form-label">Nombre *</label><input type="text" name="nombre" id="m_nombre" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" id="m_descripcion" class="form-control" rows="2"></textarea></div>
+                <div class="mb-3"><label class="form-label">Orden</label><input type="number" name="orden" id="m_orden" class="form-control" value="0"></div>
+            </div>
+            <div class="modal ead-modal-footer"><button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function resetForm(){
+    document.getElementById('formItem').action="/admin/niveles-suciedad/crear";
+    document.getElementById('modalItemTitle').textContent='Nuevo Nivel de Suciedad';
+    document.getElementById('m_nombre').value='';
+    document.getElementById('m_descripcion').value='';
+    document.getElementById('m_orden').value='0';
+}
+function editarItem(id,nombre,desc,orden){
+    document.getElementById('formItem').action="/admin/niveles-suciedad/"+id+"/editar";
+    document.getElementById('modalItemTitle').textContent='Editar Nivel de Suciedad';
+    document.getElementById('m_nombre').value=nombre;
+    document.getElementById('m_descripcion').value=desc;
+    document.getElementById('m_orden').value=orden;
+    new bootstrap.Modal(document.getElementById('modalItem')).show();
+}
+</script>
+{% endblock %}

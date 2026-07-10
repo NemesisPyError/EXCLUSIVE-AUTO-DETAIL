@@ -1,0 +1,124 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Tipos de Box — Admin{% endblock %}
+{% block content %}
+
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Tipos de Box</h5>
+    <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalTipoBox" onclick="resetForm()">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo Tipo de Box
+    </button>
+</div>
+
+{% if items %}
+<div class="admin-card">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Tipos de Vehículo Compatibles</th>
+                    <th style="width:120px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for tb in items %}
+            <tr>
+                <td style="font-weight:600;">{{ tb.nombre }}</td>
+                <td style="font-size:0.8rem;color:var(--color-text-secondary);">{{ tb.descripcion or '—' }}</td>
+                <td>
+                    {% set comp_ids = compatibilidades.get(tb.id, []) %}
+                    {% if comp_ids %}
+                        {% for tv_id in comp_ids %}
+                            {% for tv in tipos_vehiculo %}
+                                {% if tv.id == tv_id %}
+                                <span class="badge-estado badge-brand" style="margin-right:0.25rem;margin-bottom:0.25rem;">{{ tv.nombre }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:var(--color-text-secondary);font-size:0.8rem;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn-secondary" onclick='editarTipoBox({{ tb.id }}, "{{ tb.nombre|e }}", "{{ (tb.descripcion or "")|e }}", {{ comp_ids | tojson }})'>
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('admin.editar_tipo_box', tb_id=tb.id) }}" style="display:inline;" onsubmit="return confirm('¿Eliminar {{ tb.nombre|e }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="nombre" value="">
+                        <button type="submit" class="btn-danger"><i class="fa-regular fa-trash-can"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="text-center text-muted-custom py-5">No hay tipos de box registrados.</div>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalTipoBox" tabindex="-1">
+    <div class="modal ead-modal-dialog modal-dialog-centered">
+        <form class="modal ead-modal-content" method="post" id="formTipoBox">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h5 class="modal ead-modal-title" id="modalTipoBoxTitle">Nuevo Tipo de Box</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" name="nombre" id="tb_nombre" class="form-control" required maxlength="30">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" id="tb_descripcion" class="form-control" rows="3"></textarea>
+                </div>
+                <label class="form-label">Tipos de Vehículo Compatibles</label>
+                <div id="checkboxesVehiculo" style="max-height:200px;overflow-y:auto;padding:0.5rem;background:var(--color-bg-0);border-radius:8px;border:1px solid var(--color-border);">
+                    {% for tv in tipos_vehiculo %}
+                    <div class="form-check" style="margin-bottom:0.25rem;">
+                        <input class="form-check-input" type="checkbox" name="tipos_vehiculo" value="{{ tv.id }}" id="tv_{{ tv.id }}" style="background:var(--color-bg-1);border-color:var(--color-border);">
+                        <label class="form-check-label" for="tv_{{ tv.id }}" style="font-size:0.85rem;">{{ tv.nombre }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function resetForm() {
+    document.getElementById('formTipoBox').action = '{{ url_for("admin.crear_tipo_box") }}';
+    document.getElementById('modalTipoBoxTitle').textContent = 'Nuevo Tipo de Box';
+    document.getElementById('tb_nombre').value = '';
+    document.getElementById('tb_descripcion').value = '';
+    document.querySelectorAll('#checkboxesVehiculo input[type="checkbox"]').forEach(cb => cb.checked = false);
+}
+
+function editarTipoBox(id, nombre, desc, compatiblesArray) {
+    document.getElementById('formTipoBox').action = '/admin/tipos-box/' + id + '/editar';
+    document.getElementById('modalTipoBoxTitle').textContent = 'Editar Tipo de Box';
+    document.getElementById('tb_nombre').value = nombre;
+    document.getElementById('tb_descripcion').value = desc;
+    document.querySelectorAll('#checkboxesVehiculo input[type="checkbox"]').forEach(cb => {
+        cb.checked = compatiblesArray.includes(parseInt(cb.value));
+    });
+    new bootstrap.Modal(document.getElementById('modalTipoBox')).show();
+}
+
+document.getElementById('modalTipoBox').addEventListener('hidden.bs.modal', function () {
+    resetForm();
+});
+</script>
+{% endblock %}

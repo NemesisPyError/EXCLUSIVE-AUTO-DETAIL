@@ -1,0 +1,254 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Agenda — Admin{% endblock %}
+{% block extra_head %}
+<style>
+.agenda-grid {
+    display: grid;
+    position: relative;
+    background: var(--color-bg-1);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow-x: auto;
+}
+.agenda-header {
+    display: contents;
+}
+.agenda-header-cell {
+    padding: 10px 8px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-align: center;
+    border-bottom: 2px solid var(--color-border);
+    background: var(--color-bg-1);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+.agenda-header-cell:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background: var(--color-bg-1);
+}
+.agenda-time-label {
+    padding: 0 8px;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    text-align: right;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 2px;
+    position: sticky;
+    left: 0;
+    background: var(--color-bg-1);
+    z-index: 2;
+}
+.agenda-slot-cell {
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+    min-height: 36px;
+}
+.agenda-reserva-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 5px;
+    padding: 3px 5px;
+    font-size: 0.68rem;
+    overflow: hidden;
+    z-index: 1;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    border: 1px solid transparent;
+}
+.agenda-reserva-block:hover {
+    opacity: 0.85;
+    z-index: 5;
+}
+.block-ocupado {
+    background: var(--color-brand-tint);
+    border-color: var(--color-brand-glow);
+    color: var(--color-brand);
+}
+.block-cancelado {
+    background: rgba(229,72,77,0.14);
+    border-color: rgba(229,72,77,0.3);
+    color: var(--color-danger);
+    text-decoration: line-through;
+}
+.block-bloqueo {
+    background: var(--color-warning-tint);
+    border-color: rgba(224,164,41,0.3);
+    color: var(--color-warning);
+}
+.block-reasignado {
+    background: var(--color-brand-tint);
+    border-color: rgba(26,107,255,0.3);
+    color: var(--color-brand);
+}
+.agenda-box-inactivo {
+    opacity: 0.35;
+}
+.agenda-box-inactivo::after {
+    content: 'FUERA DE SERVICIO';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%) rotate(-20deg);
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: rgba(229,72,77,0.3);
+    letter-spacing: 2px;
+    pointer-events: none;
+}
+.modal-backdrop { z-index: 1050; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Agenda del Taller</h5>
+</div>
+
+<div class="filtros-admin mb-3">
+    <div class="d-flex gap-2 align-center">
+        <a href="?fecha={{ ayer.strftime('%Y-%m-%d') }}" class="btn-link-custom">
+            <i class="fa-solid fa-chevron-left"></i> {{ ayer.strftime('%d/%m') }}
+        </a>
+        <span style="font-weight:700;font-size:1rem;color:var(--color-brand);">
+            {{ fecha.strftime('%A %d de %B de %Y').capitalize() }}
+        </span>
+        <a href="?fecha={{ manana.strftime('%Y-%m-%d') }}" class="btn-link-custom">
+            {{ manana.strftime('%d/%m') }} <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        <form method="get" class="d-flex gap-2 ms-3">
+            <input type="date" name="fecha" class="form-control" style="max-width:180px;" value="{{ fecha.strftime('%Y-%m-%d') }}">
+            <button type="submit" class="btn-secondary">Ir</button>
+        </form>
+    </div>
+</div>
+
+{% if not boxes %}
+<div class="text-center text-muted-custom py-5">
+    <i class="fa-solid fa-calendar-xmark fa-3x mb-3 d-block"></i>
+    <p>No hay boxes configurados o el taller no atiende este dia.</p>
+</div>
+{% else %}
+
+<div class="agenda-grid" style="grid-template-columns: 70px repeat({{ boxes|length }}, 1fr);">
+    <div class="agenda-header-cell" style="position:sticky;left:0;z-index:4;background:var(--color-bg-1);">Hora</div>
+    {% for box in boxes %}
+    <div class="agenda-header-cell {% if not box.activo %}agenda-box-inactivo{% endif %}">
+        {{ box.nombre }}
+        <small class="d-block text-muted-custom" style="font-weight:400;font-size:0.65rem;">
+            {{ box.tipo_box.nombre if box.tipo_box else '' }}
+        </small>
+    </div>
+    {% endfor %}
+
+    {% for hora_obj in horas_objs %}
+    {% set hora_str = hora_obj.strftime('%H:%M') %}
+    <div class="agenda-time-label">{{ hora_str }}</div>
+    {% for box in boxes %}
+    <div class="agenda-slot-cell {% if not box.activo %}agenda-box-inactivo{% endif %}"
+         style="position:relative;"
+         data-box="{{ box.id }}" data-hora="{{ hora_str }}">
+    </div>
+    {% endfor %}
+    {% endfor %}
+</div>
+
+{# Bloques de reserva superpuestos con posicion absoluta #}
+{% set slot_height = 36 %}
+{% set first_hour = horas_objs[0].hour * 60 + horas_objs[0].minute if horas_objs else 420 %}
+{% set slot_minutes = 30 %}
+
+{% for box in boxes %}
+{% for r in reservas_por_box.get(box.id, []) %}
+{% set inicio_min = r.hora_inicio.hour * 60 + r.hora_inicio.minute %}
+{% set fin_min = inicio_min + r.duracion_total_min %}
+{% set offset_min = inicio_min - first_hour %}
+{% set top_px = (offset_min / slot_minutes) * slot_height %}
+{% set height_px = (r.duracion_total_min / slot_minutes) * slot_height %}
+{% set col_idx = loop.index0 %}{# box index #}
+
+{% if r.estado_reserva_id == 7 %}
+    {% set block_class = 'block-cancelado' %}
+    {% set title_text = 'CANCELADO — #' + r.id|string %}
+{% elif r.reagendado_de %}
+    {% set block_class = 'block-reasignado' %}
+    {% set title_text = 'REASIGNADO — #' + r.id|string + ' (de #' + r.reagendado_de|string + ')' %}
+{% else %}
+    {% set block_class = 'block-ocupado' %}
+    {% set title_text = '#' + r.id|string + ' — ' + (r.cliente.nombre if r.cliente else '') + ' — ' + (r.servicio.nombre if r.servicio else '') %}
+{% endif %}
+
+<div class="agenda-reserva-block {{ block_class }}"
+     style="top:{{ top_px + 40 }}px; left:calc(70px + {{ loop.index0 }} * ((100% - 70px) / {{ boxes|length }})); width:calc((100% - 70px) / {{ boxes|length }} - 4px); height:{{ [height_px, 34]|max }}px;"
+     title="{{ title_text }} — {{ r.hora_inicio.strftime('%H:%M') }}–{{ fin_min//60 }}:{{ '%02d' % (fin_min%60) }} ({{ r.duracion_total_min }}min)"
+     onclick="window.location.href='{{ url_for('admin.detalle_reserva', reserva_id=r.id) }}'">
+    <strong>#{{ r.id }}</strong> {{ r.cliente.nombre[:10] if r.cliente else '' }}
+    <small class="d-block" style="opacity:0.8;">{{ r.servicio.nombre[:18] if r.servicio else '' }}</small>
+</div>
+{% endfor %}
+{% endfor %}
+
+<form method="post" id="formDesbloquear" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalBloqueo" tabindex="-1">
+    <div class="modal ead-modal-dialog">
+        <form class="modal ead-modal-content" method="post" action="{{ url_for('admin.bloquear_box') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h5 class="modal ead-modal-title"><i class="fa-solid fa-lock me-2" style="color:var(--color-warning);"></i>Bloquear Box</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Box *</label>
+                    <select name="box_id" class="form-select" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for box in boxes %}
+                        <option value="{{ box.id }}">{{ box.nombre }} ({{ box.tipo_box.nombre if box.tipo_box else '' }}) {% if not box.activo %}[Inactivo]{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha *</label>
+                    <input type="date" name="fecha" class="form-control" value="{{ fecha.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Hora inicio *</label>
+                        <input type="time" name="hora_inicio" class="form-control" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Duracion (min) *</label>
+                        <input type="number" name="duracion_total_min" class="form-control" min="15" step="15" value="60" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo</label>
+                    <select name="motivo" class="form-select">
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Limpieza">Limpieza</option>
+                        <option value="Reparacion">Reparacion</option>
+                        <option value="Uso interno">Uso interno</option>
+                        <option value="Capacitacion">Capacitacion</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-secondary" style="background:var(--color-warning-tint);border-color:var(--color-warning);color:var(--color-warning);">Bloquear</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

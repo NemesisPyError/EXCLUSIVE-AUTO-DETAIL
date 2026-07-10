@@ -1,0 +1,274 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Horarios — Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .time-picker-row { display:flex; align-items:center; gap:0.5rem; }
+    .time-picker-row select {
+        background: var(--color-bg-0); border: 1px solid var(--color-border);
+        color: var(--color-text-primary); border-radius: 6px; padding: 0.45rem 0.5rem;
+        font-size: 0.95rem; text-align: center; font-family: var(--font-family);
+    }
+    .time-ampm {
+        padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700;
+        background: transparent; border: 1px solid var(--color-border);
+        color: var(--color-text-secondary); border-radius: 6px; cursor: pointer;
+        transition: 0.2s; font-family: var(--font-family);
+    }
+    .time-ampm.active {
+        background: var(--color-brand); border-color: var(--color-brand); color: var(--color-text-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.25rem;">
+    <h4 style="font-weight:700;margin:0;">Bloques Horarios</h4>
+    <button type="button" class="btn-sm-custom success" data-bs-toggle="modal" data-bs-target="#modalHorario">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo Bloque
+    </button>
+</div>
+
+<div class="admin-card">
+    <div style="overflow-x:auto;">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Día</th>
+                    <th>Hora Inicio</th>
+                    <th>Hora Fin</th>
+                    <th>Capacidad</th>
+                    <th>Activo</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in horarios %}
+                <tr>
+                    <td style="font-weight:600;">
+                        {% set dias = {1:'Lunes',2:'Martes',3:'Miércoles',4:'Jueves',5:'Viernes',6:'Sábado'} %}
+                        {{ dias.get(h.dia_semana, h.dia_semana) }}
+                    </td>
+                    <td>{{ h.hora_inicio.strftime('%H:%M') }}</td>
+                    <td>{{ h.hora_fin.strftime('%H:%M') }}</td>
+                    <td>
+                        <input type="number" class="capacidad-input" data-id="{{ h.id }}"
+                               value="{{ h.capacidad_maxima }}" min="1" max="50"
+                               style="width:70px;background:var(--color-bg-0);border:1px solid var(--color-border);color:var(--color-text-primary);border-radius:6px;padding:0.3rem 0.5rem;text-align:center;font-size:0.85rem;">
+                        <button class="btn-sm-custom btn-guardar-cap" data-id="{{ h.id }}" style="padding:0.3rem 0.6rem;font-size:0.72rem;display:none;">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <label class="toggle-switch" style="position:relative;display:inline-block;width:40px;height:22px;">
+                            <input type="checkbox" class="toggle-horario" data-id="{{ h.id }}"
+                                   {% if h.activo %}checked{% endif %}
+                                   style="opacity:0;width:0;height:0;">
+                            <span style="position:absolute;cursor:pointer;inset:0;background:{% if h.activo %}var(--color-brand){% else %}#444{% endif %};border-radius:22px;transition:0.25s;">
+                                <span style="position:absolute;content:'';width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);top:2px;left:{% if h.activo %}20px{% else %}2px{% endif %};transition:0.25s;"></span>
+                            </span>
+                        </label>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:0.35rem;">
+                            <button class="btn-sm-custom" title="Editar bloque"
+                                onclick="editarHorario({{ h.id }}, {{ h.dia_semana }}, '{{ h.hora_inicio.strftime('%H:%M') }}', '{{ h.hora_fin.strftime('%H:%M') }}', {{ h.capacidad_maxima }})">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-secondary);">No hay horarios configurados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Nuevo/Editar Horario -->
+<div class="modal fade" id="modalHorario" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" id="formHorario" action="{{ url_for('admin.guardar_horarios') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 style="font-weight:700;margin:0;" id="modalHorarioTitle">Nuevo Bloque Horario</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="horario_id" name="horario_id">
+                    <div class="mb-3">
+                        <label class="form-label">Día de la semana *</label>
+                        <select class="form-select" id="h_dia" name="dia_semana" required>
+                            <option value="1">Lunes</option>
+                            <option value="2">Martes</option>
+                            <option value="3">Miércoles</option>
+                            <option value="4">Jueves</option>
+                            <option value="5">Viernes</option>
+                            <option value="6">Sábado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hora inicio *</label>
+                        <input type="hidden" id="h_inicio" name="hora_inicio" required>
+                        <div class="time-picker-row" data-target="h_inicio">
+                            <select class="time-hour" style="width:75px;">
+                                {% for h in range(1,13) %}<option value="{{ h }}">{{ h }}</option>{% endfor %}
+                            </select>
+                            <span style="color:var(--color-text-secondary);">:</span>
+                            <select class="time-min" style="width:75px;">
+                                {% for m in range(0,60,5) %}<option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>{% endfor %}
+                            </select>
+                            <button type="button" class="time-ampm active" data-ampm="AM">AM</button>
+                            <button type="button" class="time-ampm" data-ampm="PM">PM</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hora fin *</label>
+                        <input type="hidden" id="h_fin" name="hora_fin" required>
+                        <div class="time-picker-row" data-target="h_fin">
+                            <select class="time-hour" style="width:75px;">
+                                {% for h in range(1,13) %}<option value="{{ h }}">{{ h }}</option>{% endfor %}
+                            </select>
+                            <span style="color:var(--color-text-secondary);">:</span>
+                            <select class="time-min" style="width:75px;">
+                                {% for m in range(0,60,5) %}<option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>{% endfor %}
+                            </select>
+                            <button type="button" class="time-ampm active" data-ampm="AM">AM</button>
+                            <button type="button" class="time-ampm" data-ampm="PM">PM</button>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Capacidad máxima</label>
+                        <input type="number" class="form-control" id="h_capacidad" name="capacidad_maxima" value="3" min="1" max="50">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-sm-custom success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ---- Time picker logic ----
+function syncTime(targetId) {
+    const row = document.querySelector('.time-picker-row[data-target="' + targetId + '"]');
+    if (!row) return;
+    const h = parseInt(row.querySelector('.time-hour').value);
+    const m = row.querySelector('.time-min').value;
+    const ampm = row.querySelector('.time-ampm.active').dataset.ampm;
+    let h24 = h;
+    if (ampm === 'AM' && h === 12) h24 = 0;
+    if (ampm === 'PM' && h !== 12) h24 = h + 12;
+    const val = String(h24).padStart(2, '0') + ':' + m;
+    document.getElementById(targetId).value = val;
+}
+
+function setTimePicker(targetId, timeStr24) {
+    if (!timeStr24) return;
+    const parts = timeStr24.split(':');
+    let h24 = parseInt(parts[0]);
+    const m = parts[1] || '00';
+    let h12, ampm;
+    if (h24 === 0) { h12 = 12; ampm = 'AM'; }
+    else if (h24 < 12) { h12 = h24; ampm = 'AM'; }
+    else if (h24 === 12) { h12 = 12; ampm = 'PM'; }
+    else { h12 = h24 - 12; ampm = 'PM'; }
+    const row = document.querySelector('.time-picker-row[data-target="' + targetId + '"]');
+    if (!row) return;
+    row.querySelector('.time-hour').value = h12;
+    row.querySelector('.time-min').value = m;
+    row.querySelectorAll('.time-ampm').forEach(b => {
+        b.classList.toggle('active', b.dataset.ampm === ampm);
+    });
+    syncTime(targetId);
+}
+
+// Attach listeners to all time-picker controls
+document.addEventListener('change', function (e) {
+    const row = e.target.closest('.time-picker-row');
+    if (!row) return;
+    if (e.target.matches('.time-hour') || e.target.matches('.time-min')) {
+        syncTime(row.dataset.target);
+    }
+});
+
+document.getElementById('modalHorario').addEventListener('click', function (e) {
+    if (!e.target.matches('.time-ampm')) return;
+    const row = e.target.closest('.time-picker-row');
+    if (!row) return;
+    row.querySelectorAll('.time-ampm').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    syncTime(row.dataset.target);
+});
+
+// Set default times when modal opens for new bloque (not editing)
+document.getElementById('modalHorario').addEventListener('shown.bs.modal', function () {
+    if (!document.getElementById('horario_id').value) {
+        // New horario: set defaults
+        document.querySelectorAll('.time-picker-row').forEach(row => {
+            row.querySelector('.time-hour').value = '7';
+            row.querySelector('.time-min').value = '00';
+            row.querySelectorAll('.time-ampm').forEach(b => b.classList.toggle('active', b.dataset.ampm === 'AM'));
+            syncTime(row.dataset.target);
+        });
+    }
+});
+
+// ---- Capacidad inline ----
+document.querySelectorAll('.capacidad-input').forEach(inp => {
+    const btn = inp.parentElement.querySelector('.btn-guardar-cap');
+    inp.addEventListener('input', function () {
+        btn.style.display = 'inline-block';
+    });
+    btn.addEventListener('click', function () {
+        const id = this.dataset.id;
+        const val = parseInt(document.querySelector('.capacidad-input[data-id="' + id + '"]').value);
+        if (val < 1) { alert('La capacidad debe ser al menos 1.'); return; }
+        fetch('/admin/horarios/' + id + '/capacidad', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+            },
+            body: JSON.stringify({ capacidad_maxima: val })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { btn.style.display = 'none'; location.reload(); }
+            else alert(data.error);
+        })
+        .catch(() => alert('Error'));
+    });
+});
+
+function editarHorario(id, dia, inicio, fin, capacidad) {
+    document.getElementById('modalHorarioTitle').textContent = 'Editar Bloque Horario';
+    document.getElementById('horario_id').value = id;
+    document.getElementById('h_dia').value = dia;
+    setTimePicker('h_inicio', inicio);
+    setTimePicker('h_fin', fin);
+    document.getElementById('h_capacidad').value = capacidad;
+    var modal = new bootstrap.Modal(document.getElementById('modalHorario'));
+    modal.show();
+}
+
+document.getElementById('modalHorario').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('modalHorarioTitle').textContent = 'Nuevo Bloque Horario';
+    document.getElementById('horario_id').value = '';
+    document.getElementById('formHorario').reset();
+    // Reset AM/PM to default
+    document.querySelectorAll('.time-picker-row').forEach(row => {
+        row.querySelectorAll('.time-ampm').forEach(b => b.classList.toggle('active', b.dataset.ampm === 'AM'));
+        syncTime(row.dataset.target);
+    });
+});
+</script>
+{% endblock %}

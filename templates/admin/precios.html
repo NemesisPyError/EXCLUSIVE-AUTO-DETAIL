@@ -1,0 +1,200 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Precios y Duraciones — Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-center justify-content-between mb-2">
+    <h5 style="font-weight:700;">Precios y Duraciones</h5>
+</div>
+
+<div class="filtros-admin mb-3">
+    <form method="get" class="d-flex gap-2 align-center w-100 flex-wrap" id="filtroForm">
+        <select name="servicio_id" class="form-control" style="max-width:280px;" onchange="this.form.submit()">
+            <option value="">— Seleccionar servicio —</option>
+            {% for s in servicios %}
+            <option value="{{ s.id }}" {% if servicio_id == s.id %}selected{% endif %}>
+                [{{ s.tipo|capitalize }}] {{ s.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if servicio_id %}
+        <select name="tipo_vehiculo_id" class="form-control" style="max-width:220px;" onchange="this.form.submit()">
+            <option value="">— Todos los tipos —</option>
+            {% for tv in tipos_vehiculo %}
+            <option value="{{ tv.id }}" {% if tipo_vehiculo_id == tv.id %}selected{% endif %}>{{ tv.nombre }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        {% if servicio_id %}<a href="{{ url_for('admin.listar_precios') }}" class="btn-link-custom">Limpiar</a>{% endif %}
+    </form>
+</div>
+
+{% if servicio_id and tipos_vehiculo and segmentos and niveles %}
+{% set tv_filtrados = tipos_vehiculo if not tipo_vehiculo_id else tipos_vehiculo|selectattr('id', 'equalto', tipo_vehiculo_id)|list %}
+
+{% for tv in tv_filtrados %}
+<div class="mb-4">
+    <h6 class="mb-2" style="color:var(--color-text-secondary);font-weight:700;">
+        <i class="{{ tv.icono or 'fa-solid fa-car' }} me-2"></i>{{ tv.nombre }}
+    </h6>
+    <div class="table-responsive">
+        <table class="table-admin" style="min-width:700px;">
+            <thead>
+                <tr>
+                    <th style="min-width:120px;">Segmento</th>
+                    {% for nv in niveles %}
+                    <th class="text-center" style="min-width:180px;">
+                        {{ nv.nombre }}<br>
+                        <small class="text-muted-custom" style="font-weight:400;">{{ nv.descripcion or '' }}</small>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for seg in segmentos %}
+                <tr>
+                    <td>
+                        <strong>{{ seg.nombre }}</strong>
+                        {% if seg.descripcion %}<br><small class="text-muted-custom">{{ seg.descripcion }}</small>{% endif %}
+                    </td>
+                    {% for nv in niveles %}
+                    {% set key = tv.id|string + ':' + seg.id|string + ':' + nv.id|string %}
+                    {% set regla = precios_data.get(key) %}
+                    {% set regla_id = precio_objects.get(key) %}
+                    <td class="text-center" style="cursor:pointer;" onclick='abrirEditor({{ tv.id }},{{ seg.id }},{{ nv.id }},{{ regla_id or "null" }},{{ regla.precio if regla else "null" }},{{ regla.duracion_minutos if regla else "null" }})'>
+                        {% if regla %}
+                        <div style="font-weight:700;color:var(--color-brand);font-size:1rem;">Gs {{ regla.precio|string|replace(',','.') }}</div>
+                        <small class="text-muted-custom">{{ regla.duracion_minutos }} min</small>
+                        {% if regla_id %}
+                        <br><small class="text-muted-custom" style="font-size:0.65rem;">Click para editar</small>
+                        {% endif %}
+                        {% else %}
+                        <div style="color:var(--color-danger);font-size:0.8rem;">Pendiente</div>
+                        <small class="text-muted-custom" style="font-size:0.65rem;">Click para configurar</small>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<div class="mt-3 p-3 rounded" style="background:var(--color-bg-1);border:1px solid var(--color-border);">
+    <button class="btn-secondary" data-bs-toggle="modal" data-bs-target="#modalDuplicar">
+        <i class="fa-solid fa-copy me-1"></i> Duplicar reglas a otro servicio
+    </button>
+</div>
+{% elif not servicio_id %}
+<div class="text-center text-muted-custom py-5">
+    <i class="fa-solid fa-tags fa-3x mb-3 d-block"></i>
+    <p>Selecciona un servicio para ver y editar su matriz de precios.</p>
+</div>
+{% endif %}
+
+<div class="modal ead-modal fade" id="modalPrecio" tabindex="-1">
+    <div class="modal ead-modal-dialog modal-sm">
+        <form class="modal ead-modal-content" method="post" action="{{ url_for('admin.guardar_precio') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="precio_id" id="mp_id">
+            <input type="hidden" name="servicio_id" value="{{ servicio_id or '' }}">
+            <input type="hidden" name="tipo_vehiculo_id" id="mp_tv">
+            <input type="hidden" name="segmento_id" id="mp_seg">
+            <input type="hidden" name="nivel_suciedad_id" id="mp_nv">
+            <div class="modal ead-modal-header">
+                <h5 class="modal ead-modal-title" id="mp_title">Configurar Regla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <p class="text-muted-custom small" id="mp_desc"></p>
+                <div class="mb-3">
+                    <label class="form-label">Precio (Gs) *</label>
+                    <input type="number" name="precio" id="mp_precio" class="form-control" min="0" step="1000" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Duracion (minutos) *</label>
+                    <input type="number" name="duracion_minutos" id="mp_duracion" class="form-control" min="1" required>
+                </div>
+                {% if servicio_id %}
+                <div class="mb-0">
+                    <button type="button" class="btn-danger w-100" id="btnEliminarRegla" style="display:none;"
+                        onclick="if(confirm('Eliminar esta regla?')){var f=document.getElementById('formEliminar');f.action='/admin/precios/'+document.getElementById('mp_id').value+'/eliminar';f.submit();}">
+                        <i class="fa-solid fa-trash me-1"></i> Eliminar regla
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+        <form method="post" id="formEliminar" style="display:none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </form>
+    </div>
+</div>
+
+<div class="modal ead-modal fade" id="modalDuplicar" tabindex="-1">
+    <div class="modal ead-modal-dialog">
+        <form class="modal ead-modal-content" method="post" action="{{ url_for('admin.duplicar_precios') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal ead-modal-header">
+                <h5 class="modal ead-modal-title">Duplicar Reglas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal ead-modal-body">
+                <p class="text-muted-custom small">Copia todas las reglas de precio/duracion de un servicio a otro. Si el destino ya tiene reglas, se actualizan.</p>
+                <div class="mb-3">
+                    <label class="form-label">Servicio origen</label>
+                    <select name="servicio_origen_id" class="form-select" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.id }}" {% if servicio_id == s.id %}selected{% endif %}>[{{ s.tipo|capitalize }}] {{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Servicio destino</label>
+                    <select name="servicio_destino_id" class="form-select" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.id }}">[{{ s.tipo|capitalize }}] {{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal ead-modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-primary">Duplicar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+var nivelesNombres = {{ niveles|map(attribute='nombre')|list|tojson }};
+var segmentosNombres = {{ segmentos|map(attribute='nombre')|list|tojson }};
+
+function abrirEditor(tvId, segId, nvId, reglaId, precio, duracion) {
+    document.getElementById('mp_id').value = reglaId || '';
+    document.getElementById('mp_tv').value = tvId;
+    document.getElementById('mp_seg').value = segId;
+    document.getElementById('mp_nv').value = nvId;
+
+    var segIdx = {{ segmentos|map(attribute='id')|list|tojson }}.indexOf(segId);
+    var nvIdx = {{ niveles|map(attribute='id')|list|tojson }}.indexOf(nvId);
+    var segLabel = segmentosNombres[segIdx] || '?';
+    var nvLabel = nivelesNombres[nvIdx] || '?';
+
+    document.getElementById('mp_title').textContent = (reglaId ? 'Editar' : 'Nueva') + ' Regla';
+    document.getElementById('mp_desc').textContent = segLabel + ' — ' + nvLabel;
+    document.getElementById('mp_precio').value = precio || '';
+    document.getElementById('mp_duracion').value = duracion || '';
+    document.getElementById('btnEliminarRegla').style.display = reglaId ? 'block' : 'none';
+
+    new bootstrap.Modal(document.getElementById('modalPrecio')).show();
+}
+</script>
+{% endblock %}
